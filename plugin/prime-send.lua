@@ -10,7 +10,7 @@ vim.api.nvim_create_user_command("PrimeSend", function()
 end, { desc = "Send the current entry to the pinned agent" })
 
 vim.api.nvim_create_user_command("PrimeSendSelectAgent", function()
-  prime_send.select_agent()
+  prime_send.select_agent(function() end)
 end, { desc = "Select and pin the agent that receives subsequent messages" })
 
 vim.api.nvim_create_user_command("PrimeSendMultiple", function()

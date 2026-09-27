@@ -1,3 +1,5 @@
+local agents = require("prime-send.agents")
+
 local M = {}
 
 M.config = {
@@ -30,7 +32,9 @@ end
 function M.send() end
 
 --- Open the selector and pin the chosen agent for subsequent messages.
-function M.select_agent() end
+function M.select_agent(on_pick)
+  return agents.select_agent(on_pick)
+end
 
 --- Open the pending queue view for an aggregated send.
 function M.send_multiple() end
