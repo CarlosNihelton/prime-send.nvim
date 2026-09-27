@@ -22,6 +22,12 @@ if [ "$1" = "send" ]; then
   for arg in "$@"; do
     printf '%s\0' "$arg"
   done
+  # Capture the argv NUL-separated when the test environment asks for it.
+  if [ -n "$PRIME_SEND_TEST_ARGV" ]; then
+    for arg in "$@"; do
+      printf '%s\0' "$arg"
+    done > "$PRIME_SEND_TEST_ARGV"
+  fi
   # Fail once when the marker sits beside this script.
   if [ -f "$(dirname "$0")/fail-once" ]; then
     rm -f "$(dirname "$0")/fail-once"

@@ -40,6 +40,8 @@ describe("PrimeSendMultiple flow", function()
 
   after_each(function()
     os.remove(marker)
+    os.remove(tests_dir .. "/.argv")
+    vim.env.PRIME_SEND_TEST_ARGV = nil
     vim.env.PRIME_SEND_TEST_MARKER = nil
     state.clear()
     state.set_pinned(nil)
@@ -81,6 +83,11 @@ describe("PrimeSendMultiple flow", function()
     state.add_entry("src/x.lua:42 Comment: first")
     state.add_entry("src/y.lua:7 Comment:\nsecond line")
 
+    -- Capture the spawned argv NUL-separated, as the real command sees it.
+    local argv_file = tests_dir .. "/.argv"
+    os.remove(argv_file)
+    vim.env.PRIME_SEND_TEST_ARGV = argv_file
+
     -- The selector opens at the last moment: on the bang form only.
     local saved_select = vim.ui.select
     vim.ui.select = function(items, _opts, on_choice)
@@ -94,6 +101,16 @@ describe("PrimeSendMultiple flow", function()
     end))
     vim.ui.select = saved_select
     assert.truthy(state.pinned())
+
+    local fh = io.open(argv_file, "rb")
+    assert.truthy(fh, "the spawned argv was not captured")
+    local data = fh:read("*a")
+    fh:close()
+
+    local argv = vim.split(data, "\0", { plain = true })
+    assert.are.equal("send", argv[1])
+    assert.are.equal("--message", argv[3])
+    assert.are.equal("src/x.lua:42 Comment: first\n\nsrc/y.lua:7 Comment:\nsecond line", argv[4])
   end)
 
   it("echoes nothing pending and spawns nothing on an empty queue", function()
