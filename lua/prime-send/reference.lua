@@ -1,5 +1,6 @@
 --- Reference resolution for the buffer under the cursor.
 local diffmap = require("prime-send.diffmap")
+local fugitive = require("prime-send.fugitive")
 
 local M = {}
 
@@ -65,6 +66,32 @@ local function diff_reference(bufnr, path, cursor)
   return string.format("%s:%d", mapped_path, line)
 end
 
+--- Build the reference of a fugitive buffer from the working-tree file
+--- path relative to the project root, keeping the cursor line number
+--- unchanged for index and commit revisions.
+---@param bufnr integer
+---@param name string the fugitive buffer name
+---@param cursor integer the cursor line
+---@return string|nil reference
+local function fugitive_reference(_bufnr, name, cursor)
+  local parsed = fugitive.parse_url(name)
+  if not parsed then
+    return nil
+  end
+
+  local worktree_path = fugitive.worktree_path(parsed)
+  if not worktree_path then
+    return nil
+  end
+
+  local toplevel =
+    vim.trim(vim.fn.system({ "git", "-C", vim.fn.fnamemodify(worktree_path, ":h"), "rev-parse", "--show-toplevel" }))
+  if vim.v.shell_error == 0 and toplevel ~= "" and worktree_path:sub(1, #toplevel + 1) == toplevel .. "/" then
+    worktree_path = worktree_path:sub(#toplevel + 2)
+  end
+  return string.format("%s:%d", worktree_path, cursor)
+end
+
 --- The visual selection of a buffer, read from the marks and normalized so
 --- that the start never exceeds the end. Rounded to whole lines for
 --- line-wise and character-wise selections. Returns nil when no selection
@@ -100,6 +127,13 @@ function M.for_buffer(bufnr)
   end
 
   local start, stop = visual_range(bufnr)
+
+  if path:sub(1, 11) == "fugitive://" then
+    local ref = fugitive_reference(bufnr, path, line)
+    if ref then
+      return ref
+    end
+  end
 
   if is_diff_buffer(bufnr, path) then
     local ref = diff_reference(bufnr, path, line)
