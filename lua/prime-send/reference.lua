@@ -49,20 +49,15 @@ end
 --- The mapped path is kept relative to the project root when that file
 --- exists under the root, else the patch-relative path is kept.
 ---@param bufnr integer
----@param path string the absolute path of the diff buffer
 ---@param cursor integer the cursor buffer line
 ---@return string|nil reference
-local function diff_reference(bufnr, path, cursor)
+local function diff_reference(bufnr, cursor)
   local sections = diffmap.parse(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false))
   local mapped_path, line = diffmap.locate(sections, cursor)
   if not mapped_path or not line then
     return nil
   end
 
-  local root = project_root(path, bufnr)
-  if root and vim.uv.fs_stat(root .. "/" .. mapped_path) then
-    return string.format("%s:%d", mapped_path, line)
-  end
   return string.format("%s:%d", mapped_path, line)
 end
 
@@ -137,7 +132,7 @@ function M.for_buffer(bufnr)
   end
 
   if is_diff_buffer(bufnr, path) then
-    local ref = diff_reference(bufnr, path, line)
+    local ref = diff_reference(bufnr, line)
     if ref then
       return ref
     end

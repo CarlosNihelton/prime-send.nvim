@@ -1,10 +1,9 @@
 local format = require("prime-send.format")
 local scratch = require("prime-send.scratch")
 
-describe("prime-send.format.multi_line", function()
-  it("keeps body lines verbatim, including blank and indented lines", function()
-    local message = format.multi_line("src/x.lua:42", { "first", "", "  indented" })
-    assert.are.equal("src/x.lua:42 Comment:\nfirst\n\n  indented", message)
+describe("prime-send.format", function()
+  it("exports no multi_line since the scratch flow composes its own message", function()
+    assert.is_nil(format.multi_line)
   end)
 end)
 
