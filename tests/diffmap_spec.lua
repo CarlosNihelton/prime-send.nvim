@@ -133,6 +133,36 @@ describe("prime-send.diffmap.locate", function()
   end)
 end)
 
+describe("prime-send.diffmap.locate mixed hunk", function()
+  local mixed_diff = table.concat({
+    "diff --git a/src/mixed.lua b/src/mixed.lua",
+    "index 1111111..2222222 100644",
+    "--- a/src/mixed.lua",
+    "+++ b/src/mixed.lua",
+    "@@ -10,4 +10,5 @@",
+    " context ten",
+    "+added after context",
+    "-deleted eleven",
+    " context twelve",
+  }, "\n")
+
+  it("keeps old-side mapping unaffected by preceding added lines", function()
+    local sections = diffmap.parse(mixed_diff)
+    -- buffer line 6: " context ten" -> new 10
+    local _, first = diffmap.locate(sections, 6)
+    assert.are.equal(10, first)
+    -- buffer line 7: "+added after context" -> new 11, old untouched
+    local _, added = diffmap.locate(sections, 7)
+    assert.are.equal(11, added)
+    -- buffer line 8: "-deleted eleven" -> old must still be 11, not 12
+    local _, deleted = diffmap.locate(sections, 8)
+    assert.are.equal(11, deleted)
+    -- buffer line 9: " context twelve" -> new 12
+    local _, last = diffmap.locate(sections, 9)
+    assert.are.equal(12, last)
+  end)
+end)
+
 describe("prime-send.reference.for_buffer on diff buffers", function()
   it("returns a root-relative reference built from locate", function()
     local repo = vim.fn.tempname() .. "-repo-diff"

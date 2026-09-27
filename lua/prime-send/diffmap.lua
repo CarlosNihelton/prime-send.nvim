@@ -104,6 +104,8 @@ function M.locate(sections, buf_line)
           end
           if kind == "-" then
             old_line = old_line + 1
+          elseif kind == "+" then
+            new_line = new_line + 1
           else
             old_line = old_line + 1
             new_line = new_line + 1
