@@ -50,6 +50,21 @@ describe("prime-send.fugitive.worktree_path", function()
     assert.are.equal(repo .. "/src/tracked.lua", resolved)
   end)
 
+  it("resolves a linked worktree file through its worktree root", function()
+    if vim.fn.exists("*FugitiveReal") == 1 then
+      pending("FugitiveReal is loaded")
+      return
+    end
+    local linked = repo .. "-linked"
+    vim.fn.system({ "git", "-C", repo, "worktree", "add", "--quiet", linked, "HEAD" })
+
+    local parsed = fugitive.parse_url("fugitive://" .. linked .. "/.git//" .. sha .. "/src/tracked.lua")
+    local resolved = fugitive.worktree_path(parsed)
+    assert.are.equal(linked .. "/src/tracked.lua", resolved)
+
+    vim.fn.system({ "git", "-C", repo, "worktree", "remove", "--force", linked })
+  end)
+
   it("prefers a stubbed FugitiveReal when the function exists", function()
     vim.cmd("function! FugitiveReal(f) abort\n return '/stubbed/real.lua'\nendfunction")
     local parsed = fugitive.parse_url("fugitive://" .. repo .. "/.git//" .. sha .. "/src/tracked.lua")

@@ -66,7 +66,21 @@ function M.worktree_path(parsed)
   if vim.v.shell_error ~= 0 or git_dir == "" then
     return nil
   end
+
   local toplevel = vim.fn.fnamemodify(git_dir, ":h")
+  local admin_dir = git_dir:match("^(.+)/%.git/worktrees/[^/]+$")
+  if admin_dir then
+    -- A linked-worktree admin directory: its gitdir file points at the
+    -- linked worktree's .git file, whose parent is the worktree root.
+    local gitdir_file = vim.fn.readfile(git_dir .. "/gitdir")
+    if gitdir_file and #gitdir_file > 0 then
+      local linked_root = vim.trim(gitdir_file[1]):match("^(.+)/%.git$")
+      if linked_root then
+        toplevel = linked_root
+      end
+    end
+  end
+
   return toplevel .. "/" .. parsed.path
 end
 
