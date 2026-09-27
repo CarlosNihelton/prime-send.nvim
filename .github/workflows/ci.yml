@@ -43,5 +43,6 @@ jobs:
           git clone --depth 1 https://github.com/nvim-lua/plenary.nvim .deps/plenary.nvim
       - name: Run plenary busted suite
         run: |
-          nvim --headless -u tests/minimal_init.lua \
-            "+PlenaryBustedFile tests/spec.lua" +qa
+          for spec in tests/spec.lua tests/*_spec.lua; do
+            nvim --headless -u tests/minimal_init.lua "+PlenaryBustedFile $spec" +qa
+          done
