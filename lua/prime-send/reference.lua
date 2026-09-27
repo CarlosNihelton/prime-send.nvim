@@ -30,8 +30,28 @@ local function project_root(path, bufnr)
   return nil
 end
 
+--- The visual selection of a buffer, read from the marks and normalized so
+--- that the start never exceeds the end. Rounded to whole lines for
+--- line-wise and character-wise selections. Returns nil when no selection
+--- is active.
+---@param bufnr integer
+---@return integer|nil start
+---@return integer|nil stop
+local function visual_range(bufnr)
+  local start = vim.api.nvim_buf_get_mark(bufnr, "<")[1]
+  local stop = vim.api.nvim_buf_get_mark(bufnr, ">")[1]
+  if start == 0 and stop == 0 then
+    return nil
+  end
+  if start > stop then
+    start, stop = stop, start
+  end
+  return start, stop
+end
+
 --- The reference of a buffer: its file path relative to the project root,
---- then a colon, then the cursor line number.
+--- then a colon, then the cursor line number, or `path:start-end` for the
+--- active visual selection.
 ---@param bufnr integer
 ---@return string reference
 function M.for_buffer(bufnr)
@@ -44,7 +64,12 @@ function M.for_buffer(bufnr)
     end
   end
 
+  local start, stop = visual_range(bufnr)
+
   if path == "" then
+    if start then
+      return string.format("buffer:%d:%d-%d", bufnr, start, stop)
+    end
     return string.format("buffer:%d:%d", bufnr, line)
   end
 
@@ -55,6 +80,9 @@ function M.for_buffer(bufnr)
     path = path:sub(#prefix + 1)
   end
 
+  if start then
+    return string.format("%s:%d-%d", path, start, stop)
+  end
   return string.format("%s:%d", path, line)
 end
 
