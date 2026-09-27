@@ -1,5 +1,19 @@
 --- Reference resolution for the buffer under the cursor.
+local diffmap = require("prime-send.diffmap")
+
 local M = {}
+
+--- Whether a buffer carries diff content: a diff filetype or a .patch/.diff
+--- file name.
+---@param bufnr integer
+---@param path string
+---@return boolean
+local function is_diff_buffer(bufnr, path)
+  if vim.bo[bufnr].filetype == "diff" then
+    return true
+  end
+  return path:match("%.patch$") ~= nil or path:match("%.diff$") ~= nil
+end
 
 --- The project root of a buffer: the git toplevel of its directory when the
 --- buffer lives in a repository, else the root of the first attached LSP
@@ -28,6 +42,27 @@ local function project_root(path, bufnr)
   end
 
   return nil
+end
+
+--- Map the cursor in a diff buffer to the referenced file line via diffmap.
+--- The mapped path is kept relative to the project root when that file
+--- exists under the root, else the patch-relative path is kept.
+---@param bufnr integer
+---@param path string the absolute path of the diff buffer
+---@param cursor integer the cursor buffer line
+---@return string|nil reference
+local function diff_reference(bufnr, path, cursor)
+  local sections = diffmap.parse(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false))
+  local mapped_path, line = diffmap.locate(sections, cursor)
+  if not mapped_path or not line then
+    return nil
+  end
+
+  local root = project_root(path, bufnr)
+  if root and vim.uv.fs_stat(root .. "/" .. mapped_path) then
+    return string.format("%s:%d", mapped_path, line)
+  end
+  return string.format("%s:%d", mapped_path, line)
 end
 
 --- The visual selection of a buffer, read from the marks and normalized so
@@ -65,6 +100,13 @@ function M.for_buffer(bufnr)
   end
 
   local start, stop = visual_range(bufnr)
+
+  if is_diff_buffer(bufnr, path) then
+    local ref = diff_reference(bufnr, path, line)
+    if ref then
+      return ref
+    end
+  end
 
   if path == "" then
     if start then
