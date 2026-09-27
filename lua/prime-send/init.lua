@@ -93,7 +93,12 @@ end
 ---@param on_entry fun(message: string|nil)
 local function capture(on_entry)
   vim.ui.input({ prompt = "Comment: " }, function(comment)
-    if not comment or comment == "" then
+    if not comment then
+      on_entry(nil)
+      return
+    end
+
+    if comment == "" then
       local ref = reference.for_buffer(vim.api.nvim_get_current_buf())
       scratch.open(ref, on_entry)
       return

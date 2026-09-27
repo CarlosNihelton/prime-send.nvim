@@ -92,6 +92,50 @@ describe("prime-send.scratch.open", function()
   end)
 end)
 
+describe("prime_send with cancelled comment", function()
+  after_each(function()
+    vim.cmd("silent! %bwipeout!")
+  end)
+
+  it("opens no scratch window and sends nothing", function()
+    local repo = vim.fn.tempname() .. "-repo-cancel"
+    vim.fn.mkdir(repo .. "/src", "p")
+    local lines = {}
+    for i = 1, 50 do
+      lines[i] = "line " .. i
+    end
+    vim.fn.writefile(lines, repo .. "/src/cancelled.lua")
+    vim.fn.system({ "git", "-C", repo, "init", "--quiet" })
+
+    local bufnr = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_name(bufnr, repo .. "/src/cancelled.lua")
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+
+    local win = vim.api.nvim_open_win(bufnr, true, {
+      relative = "editor",
+      width = 40,
+      height = 10,
+      row = 1,
+      col = 1,
+    })
+    vim.api.nvim_win_set_cursor(win, { 42, 0 })
+
+    local saved_input = vim.ui.input
+    vim.ui.input = function(_opts, on_confirm)
+      on_confirm(nil)
+    end
+    local prime_send_module = require("prime-send")
+    prime_send_module.prime_send()
+    vim.ui.input = saved_input
+
+    for _, w in ipairs(vim.api.nvim_list_wins()) do
+      if w ~= win then
+        assert.are.equal("", vim.api.nvim_win_get_config(w).relative, "no floating window should open")
+      end
+    end
+  end)
+end)
+
 describe("prime_send with empty comment", function()
   after_each(function()
     vim.cmd("silent! %bwipeout!")
