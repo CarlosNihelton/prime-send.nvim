@@ -57,6 +57,39 @@ describe("prime-send.scratch.open", function()
     vim.api.nvim_win_close(win, true)
     assert.is_nil(sent)
   end)
+
+  it("allows a second scratch while the first is live, each delivering to its own callback", function()
+    local first_message, second_message
+    local win1, bufnr1 = scratch.open("src/one.lua:1", function(message)
+      first_message = message
+    end)
+    local win2, bufnr2 = scratch.open("src/two.lua:2", function(message)
+      second_message = message
+    end)
+
+    assert.is_true(vim.api.nvim_win_is_valid(win1))
+    assert.is_true(vim.api.nvim_win_is_valid(win2))
+    assert.are_not.equal(bufnr1, bufnr2)
+
+    vim.api.nvim_buf_set_lines(bufnr2, 0, -1, false, { "src/two.lua:2 Comment:", "from second" })
+    vim.api.nvim_set_current_win(win2)
+    vim.cmd("silent! write")
+
+    assert.are.equal("src/two.lua:2 Comment:\nfrom second", second_message)
+    assert.is_nil(first_message)
+    assert.is_false(vim.api.nvim_win_is_valid(win2))
+    assert.is_false(vim.api.nvim_buf_is_valid(bufnr2))
+    assert.is_true(vim.api.nvim_win_is_valid(win1))
+    assert.is_true(vim.api.nvim_buf_is_valid(bufnr1))
+
+    vim.api.nvim_buf_set_lines(bufnr1, 0, -1, false, { "src/one.lua:1 Comment:", "from first" })
+    vim.api.nvim_set_current_win(win1)
+    vim.cmd("silent! write")
+
+    assert.are.equal("src/one.lua:1 Comment:\nfrom first", first_message)
+    assert.is_false(vim.api.nvim_win_is_valid(win1))
+    assert.is_false(vim.api.nvim_buf_is_valid(bufnr1))
+  end)
 end)
 
 describe("prime_send with empty comment", function()

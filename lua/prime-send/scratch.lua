@@ -1,5 +1,7 @@
 local M = {}
 
+local scratch_count = 0
+
 --- Open the scratch buffer for composing a multi-line comment: an unlisted
 --- markdown buffer in a centered floating window, prefilled with the
 --- reference line. Writing the buffer delivers the composed message through
@@ -13,7 +15,8 @@ function M.open(reference, on_send)
   vim.bo[bufnr].filetype = "markdown"
   vim.bo[bufnr].buftype = "acwrite"
   vim.bo[bufnr].bufhidden = "hide"
-  vim.api.nvim_buf_set_name(bufnr, "prime-send://scratch")
+  scratch_count = scratch_count + 1
+  vim.api.nvim_buf_set_name(bufnr, ("prime-send://scratch-%d"):format(scratch_count))
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { reference .. " Comment:" })
 
   local width = math.floor(vim.o.columns * 0.6)
