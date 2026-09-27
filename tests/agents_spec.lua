@@ -66,6 +66,34 @@ describe("prime-send.agents.selector_entries", function()
   end)
 end)
 
+describe("prime-send.agents.iso_to_epoch", function()
+  it("maps 1970-01-01T00:00:00 to exactly 0", function()
+    assert.are.equal(0, agents.iso_to_epoch("1970-01-01T00:00:00.000Z"))
+  end)
+
+  it("maps 1970-01-01T00:00:00 to 0 under a non-UTC timezone", function()
+    local saved_tz = os.getenv("TZ")
+    vim.env.TZ = "Asia/Kolkata"
+    local ok, epoch = pcall(agents.iso_to_epoch, "1970-01-01T00:00:00.000Z")
+    if saved_tz then
+      vim.env.TZ = saved_tz
+    else
+      vim.env.TZ = ""
+    end
+    if not ok then
+      error(epoch)
+    end
+    assert.are.equal(0, epoch)
+  end)
+end)
+
+describe("prime-send.agents.relative_age", function()
+  it("returns 1m for a UTC timestamp exactly 90 seconds before now", function()
+    local iso = os.date("!%Y-%m-%dT%H:%M:%S", os.time() - 90)
+    assert.are.equal("1m", agents.relative_age(iso))
+  end)
+end)
+
 describe("prime-send.agents.pick_identity", function()
   it("falls back session id, then worker id, then name", function()
     assert.are.equal("sid", agents.pick_identity({ id = "sid", worker_id = "wid", name = "nm" }))

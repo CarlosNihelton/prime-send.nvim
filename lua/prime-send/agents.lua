@@ -36,6 +36,8 @@ function M.parse_list(json_str)
 end
 
 --- Convert an ISO-8601 timestamp to a Unix epoch (0 when unparsable).
+--- The naive fields denote UTC, so the local timezone offset is subtracted
+--- from the local-time interpretation of os.time.
 ---@param iso string|nil
 ---@return number
 local function iso_to_epoch(iso)
@@ -46,8 +48,22 @@ local function iso_to_epoch(iso)
   if not y then
     return 0
   end
-  return os.time({ year = y, month = mo, day = d, hour = h, min = mi, sec = s })
+  local fields = { year = y, month = mo, day = d, hour = h, min = mi, sec = s }
+  local local_now = os.date("*t")
+  local utc_now = os.date("!*t")
+  local offset = os.time(local_now)
+    - os.time({
+      year = utc_now.year,
+      month = utc_now.month,
+      day = utc_now.day,
+      hour = utc_now.hour,
+      min = utc_now.min,
+      sec = utc_now.sec,
+    })
+  return os.time(fields) + offset
 end
+
+M.iso_to_epoch = iso_to_epoch
 
 --- Human relative duration between now and an ISO-8601 timestamp.
 ---@param iso string|nil
@@ -84,6 +100,8 @@ local function basename(path)
   end
   return path:match("[^/]+$") or path
 end
+
+M.relative_age = relative_age
 
 --- One display string per session, active sessions first, then most recently
 --- modified. Format: `id · name-or-dash · lifecycle · activity · summary`
