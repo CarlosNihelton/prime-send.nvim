@@ -1,4 +1,5 @@
 local agents = require("prime-send.agents")
+local state = require("prime-send.state")
 
 local M = {}
 
@@ -28,8 +29,68 @@ function M.setup(opts)
   return M.config
 end
 
---- Send a message about the current entry to the pinned agent.
-function M.send() end
+local format = require("prime-send.format")
+local reference = require("prime-send.reference")
+local sender = require("prime-send.send")
+
+local function echo(msg)
+  vim.api.nvim_echo({ { msg, "WarningMsg" } }, true, {})
+end
+
+local function failure_matches(stderr)
+  if type(stderr) ~= "string" then
+    return false
+  end
+  return stderr:find("Unknown active session", 1, true) ~= nil
+    or stderr:find("Ambiguous active session", 1, true) ~= nil
+end
+
+--- Send a message about the current buffer position to the pinned agent.
+--- Prompts for the comment, ensures a pinned agent, composes the wire-format
+--- message, and delivers it. A failed delivery caused by an unknown or
+--- ambiguous active session reopens the selector and resends once.
+function M.prime_send()
+  vim.ui.input({ prompt = "Comment: " }, function(comment)
+    if not comment or comment == "" then
+      echo("prime-send: empty message")
+      return
+    end
+
+    local message = format.single_line(reference.for_buffer(vim.api.nvim_get_current_buf()), comment)
+
+    local function deliver(identity, retried)
+      sender.send(identity, message, function(result)
+        if result.code == 0 then
+          return
+        end
+        if not failure_matches(result.stderr) or retried then
+          return
+        end
+        agents.select_agent(function(new_identity)
+          if not new_identity then
+            echo("prime-send: aborted")
+            return
+          end
+          deliver(new_identity, true)
+        end)
+      end)
+    end
+
+    local identity = state.pinned()
+    if not identity then
+      agents.select_agent(function(chosen)
+        if not chosen then
+          echo("prime-send: aborted")
+          return
+        end
+        deliver(chosen, false)
+      end)
+      return
+    end
+
+    deliver(identity, false)
+  end)
+end
 
 --- Open the selector and pin the chosen agent for subsequent messages.
 function M.select_agent(on_pick)

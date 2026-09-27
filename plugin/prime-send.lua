@@ -6,7 +6,7 @@ vim.g.loaded_prime_send = true
 local prime_send = require("prime-send")
 
 vim.api.nvim_create_user_command("PrimeSend", function()
-  prime_send.send()
+  prime_send.prime_send()
 end, { desc = "Send the current entry to the pinned agent" })
 
 vim.api.nvim_create_user_command("PrimeSendSelectAgent", function()

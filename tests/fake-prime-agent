@@ -1,8 +1,23 @@
 #!/bin/sh
-# Fake prime-agent CLI for tests: serves the list subcommand from the golden fixture.
+# Fake prime-agent CLI for tests.
 if [ "$1" = "list" ]; then
   cat "$(dirname "$0")/golden/list.json"
   exit 0
 fi
+
+if [ "$1" = "send" ]; then
+  # Echo every argv element NUL-separated to stdout.
+  for arg in "$@"; do
+    printf '%s\0' "$arg"
+  done
+  # Fail once when the marker sits beside this script.
+  if [ -f "$(dirname "$0")/fail-once" ]; then
+    rm -f "$(dirname "$0")/fail-once"
+    echo "Error: Unknown active session: $2" >&2
+    exit 1
+  fi
+  exit 0
+fi
+
 echo "unknown subcommand: $1" >&2
 exit 1
