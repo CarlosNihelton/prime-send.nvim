@@ -147,8 +147,17 @@ function M.select_agent(on_pick)
   local stdout = vim.uv.new_pipe(false)
   local chunks = {}
   local handle
+  local exited = false
+  local eof = false
+  local finished = false
 
+  --- Parse and offer the selector once the process has exited AND the
+  --- stdout stream has ended, so the tail of the output is never lost.
   local function finish()
+    if finished or not exited or not eof then
+      return
+    end
+    finished = true
     stdout:read_stop()
     stdout:close()
     if handle and not handle:is_closing() then
@@ -179,22 +188,21 @@ function M.select_agent(on_pick)
     args = { "list", "--json", "--all" },
     stdio = { nil, stdout, nil },
   }, function()
-    -- Give pending read callbacks a chance to deliver the tail of the output.
-    local timer = vim.uv.new_timer()
-    timer:start(10, 0, function()
-      timer:stop()
-      timer:close()
-      finish()
-    end)
+    exited = true
+    finish()
   end)
 
   if not handle then
+    stdout:close()
     error(string.format("prime-send: failed to spawn %q", config.cmd))
   end
 
   stdout:read_start(function(_, data)
     if data then
       chunks[#chunks + 1] = data
+    else
+      eof = true
+      finish()
     end
   end)
 end

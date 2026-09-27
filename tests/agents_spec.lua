@@ -105,6 +105,61 @@ describe("prime-send.agents.select_agent", function()
     assert.are.equal(expected_id, chosen_identity)
   end)
 
+  it("offers all 300 sessions of the large golden listing", function()
+    local item_count, first_entry
+    local saved_select = vim.ui.select
+    vim.ui.select = function(items, _opts, on_choice)
+      item_count = #items
+      first_entry = items[1]
+      on_choice(items[1], 1)
+    end
+
+    vim.env.PRIME_SEND_TEST_LISTING = "large"
+    local identity = "unset"
+    agents.select_agent(function(id)
+      identity = id
+    end)
+    -- identity is asserted below after the wait
+    vim.wait(5000, function()
+      return item_count ~= nil
+    end, 10)
+    vim.env.PRIME_SEND_TEST_LISTING = nil
+    vim.ui.select = saved_select
+
+    assert.are.equal(300, item_count)
+    -- The active session is offered first and carries its session id.
+    assert.truthy(first_entry:find("session%-000"))
+    local large = agents.parse_list(table.concat(vim.fn.readfile(tests_dir .. "/golden/list-large.json"), "\n"))
+    assert.are.equal(large[1].id, state.pinned())
+    assert.are.equal(large[1].id, identity)
+  end)
+
+  it("opens the selector only after the process exited and stdout ended", function()
+    local opened_at
+    local saved_select = vim.ui.select
+    vim.ui.select = function(items, _opts, on_choice)
+      opened_at = vim.uv.hrtime()
+      assert.are.equal(3, #items)
+      on_choice(items[1], 1)
+    end
+
+    vim.env.PRIME_SEND_TEST_LISTING = "slow"
+    local start = vim.uv.hrtime()
+    local identity = "unset"
+    agents.select_agent(function(id)
+      identity = id
+    end)
+    vim.wait(5000, function()
+      return opened_at ~= nil
+    end, 10)
+    vim.env.PRIME_SEND_TEST_LISTING = nil
+    vim.ui.select = saved_select
+
+    assert.truthy(opened_at)
+    assert.truthy((opened_at - start) / 1e9 >= 0.25, "selector opened before the listing process finished")
+    assert.are.equal(agents.parse_list(fixture())[1].id, identity)
+  end)
+
   it("calls on_pick with nil when the selector is cancelled", function()
     local called, cancelled = false, "unset"
     local saved_select = vim.ui.select
