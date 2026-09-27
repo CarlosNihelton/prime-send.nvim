@@ -112,6 +112,55 @@ describe("prime-send.reference.for_buffer", function()
     assert.are.equal("src/charwise.lua:3-4", reference.for_buffer(bufnr))
   end)
 
+  it("is resolved exactly once per prime_send delivery", function()
+    local tests_dir = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h")
+    local state = require("prime-send.state")
+    local prime_send_module = require("prime-send")
+    prime_send_module.setup({ cmd = tests_dir .. "/fake-prime-agent" })
+    state.set_pinned("sess-once")
+
+    local repo = vim.fn.tempname() .. "-repo-once"
+    vim.fn.mkdir(repo .. "/src", "p")
+    vim.fn.writefile({ "hello" }, repo .. "/src/once.lua")
+    vim.fn.system({ "git", "-C", repo, "init", "--quiet" })
+
+    local bufnr = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_name(bufnr, repo .. "/src/once.lua")
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "hello" })
+
+    local win = vim.api.nvim_open_win(bufnr, true, {
+      relative = "editor",
+      width = 40,
+      height = 10,
+      row = 1,
+      col = 1,
+    })
+    vim.api.nvim_win_set_cursor(win, { 1, 0 })
+
+    local calls = 0
+    local orig_for_buffer = reference.for_buffer
+    reference.for_buffer = function(b)
+      calls = calls + 1
+      return orig_for_buffer(b)
+    end
+
+    local saved_input = vim.ui.input
+    vim.ui.input = function(_opts, on_confirm)
+      on_confirm("fix this")
+    end
+
+    prime_send_module.prime_send()
+    vim.wait(5000, function()
+      return calls > 0
+    end, 10)
+
+    reference.for_buffer = orig_for_buffer
+    vim.ui.input = saved_input
+    state.set_pinned(nil)
+
+    assert.are.equal(1, calls)
+  end)
+
   it("returns an absolute path outside any repository", function()
     local outside = vim.fn.tempname() .. "-outside"
     vim.fn.mkdir(outside, "p")

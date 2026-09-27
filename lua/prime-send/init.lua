@@ -90,8 +90,9 @@ end
 
 --- The shared capture flow: prompt for the comment, opening the scratch
 --- buffer on empty input, and hand the composed entry to on_entry.
+---@param ref string the precomputed reference of the current buffer
 ---@param on_entry fun(message: string|nil)
-local function capture(on_entry)
+local function capture(ref, on_entry)
   vim.ui.input({ prompt = "Comment: " }, function(comment)
     if not comment then
       on_entry(nil)
@@ -99,12 +100,11 @@ local function capture(on_entry)
     end
 
     if comment == "" then
-      local ref = reference.for_buffer(vim.api.nvim_get_current_buf())
       scratch.open(ref, on_entry)
       return
     end
 
-    on_entry(format.single_line(reference.for_buffer(vim.api.nvim_get_current_buf()), comment))
+    on_entry(format.single_line(ref, comment))
   end)
 end
 
@@ -114,7 +114,13 @@ end
 --- extended input instead. A failed delivery caused by an unknown or
 --- ambiguous active session reopens the selector and resends once.
 function M.prime_send()
-  capture(function(message)
+  local ref = reference.for_buffer(vim.api.nvim_get_current_buf())
+  if not ref then
+    echo("prime-send: no reference for this buffer")
+    return
+  end
+
+  capture(ref, function(message)
     if not message then
       return
     end
@@ -140,7 +146,13 @@ function M.send_multiple(opts)
     return
   end
 
-  capture(function(message)
+  local ref = reference.for_buffer(vim.api.nvim_get_current_buf())
+  if not ref then
+    echo("prime-send: no reference for this buffer")
+    return
+  end
+
+  capture(ref, function(message)
     if not message then
       return
     end

@@ -115,7 +115,7 @@ end
 --- then a colon, then the cursor line number, or `path:start-end` for the
 --- active visual selection.
 ---@param bufnr integer
----@return string reference
+---@return string|nil reference nil when the buffer has no sendable reference
 function M.for_buffer(bufnr)
   local path = vim.api.nvim_buf_get_name(bufnr)
   local line = 1
@@ -133,6 +133,7 @@ function M.for_buffer(bufnr)
     if ref then
       return ref
     end
+    return nil
   end
 
   if is_diff_buffer(bufnr, path) then

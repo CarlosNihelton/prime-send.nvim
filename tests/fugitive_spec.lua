@@ -85,4 +85,79 @@ describe("prime-send.reference.for_buffer on fugitive buffers", function()
 
     assert.are.equal("src/committed.lua:2", reference.for_buffer(bufnr))
   end)
+
+  it("returns nil for an index buffer without a file path", function()
+    local repo = vim.fn.tempname() .. "-fugitive-index-repo"
+    vim.fn.mkdir(repo, "p")
+    vim.fn.system({ "git", "-C", repo, "init", "--quiet" })
+
+    local bufnr = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_name(bufnr, "fugitive://" .. repo .. "/.git//0")
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "staged" })
+
+    local win = vim.api.nvim_open_win(bufnr, true, {
+      relative = "editor",
+      width = 40,
+      height = 10,
+      row = 1,
+      col = 1,
+    })
+    vim.api.nvim_win_set_cursor(win, { 1, 0 })
+
+    assert.is_nil(reference.for_buffer(bufnr))
+  end)
+end)
+
+describe("prime_send on an unsendable fugitive index buffer", function()
+  before_each(function()
+    vim.cmd("silent! %bwipeout!")
+  end)
+
+  after_each(function()
+    vim.cmd("silent! %bwipeout!")
+  end)
+
+  it("echoes the no-reference message, prompts nothing, and sends nothing", function()
+    local repo = vim.fn.tempname() .. "-fugitive-abort-repo"
+    vim.fn.mkdir(repo, "p")
+    vim.fn.system({ "git", "-C", repo, "init", "--quiet" })
+
+    local bufnr = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_name(bufnr, "fugitive://" .. repo .. "/.git//0")
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "staged" })
+
+    local win = vim.api.nvim_open_win(bufnr, true, {
+      relative = "editor",
+      width = 40,
+      height = 10,
+      row = 1,
+      col = 1,
+    })
+    vim.api.nvim_win_set_cursor(win, { 1, 0 })
+
+    local echoed, prompted
+    local saved_echo = vim.api.nvim_echo
+    vim.api.nvim_echo = function(chunks)
+      echoed = table.concat(vim.tbl_map(function(c)
+        return c[1]
+      end, chunks))
+    end
+    local saved_input = vim.ui.input
+    vim.ui.input = function()
+      prompted = true
+    end
+
+    require("prime-send").prime_send()
+
+    vim.api.nvim_echo = saved_echo
+    vim.ui.input = saved_input
+
+    assert.are.equal("prime-send: no reference for this buffer", echoed)
+    assert.is_nil(prompted)
+    for _, w in ipairs(vim.api.nvim_list_wins()) do
+      if w ~= win then
+        assert.are.equal("", vim.api.nvim_win_get_config(w).relative, "no floating window should open")
+      end
+    end
+  end)
 end)

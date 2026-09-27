@@ -106,9 +106,10 @@ BUFFER SUPPORT                                          *prime-send-buffers*
     Fugitive buffers (`fugitive://` names with a 40+ hex sha or a single
     stage digit 0-3): the reference is resolved to the working-tree file
     path via |FugitiveReal| when available, else by joining the toplevel
-    derived from the git dir with the URL-decoded path. Caveats: the URL
-    must carry a file path (an index buffer without one cannot be sent);
-    linked worktree git dirs are resolved through their main git dir.
+    derived from the git dir with the URL-decoded path. Caveats: a buffer
+    without a work-tree file path (such as an index buffer) echoes
+    `prime-send: no reference for this buffer` and sends nothing; linked
+    worktree git dirs are resolved through their main git dir.
 
 ==============================================================================
 SCRATCH BUFFER                                          *prime-send-scratch*

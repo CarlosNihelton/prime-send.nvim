@@ -76,8 +76,9 @@ another entry
   files removed by a patch are referenced by their recorded path.
 - **Fugitive buffers** (`fugitive://` names with a commit sha or a stage digit): the reference is
   resolved to the working-tree file path via `FugitiveReal` when available, else by deriving the
-  toplevel from the git dir. Caveats: an index buffer without a file path cannot be sent; linked
-  worktree git dirs are resolved through their main git dir.
+  toplevel from the git dir. Caveats: a buffer without a work-tree file path (such as an index
+  buffer) echoes `prime-send: no reference for this buffer` and sends nothing; linked worktree
+  git dirs are resolved through their main git dir.
 
 ## Installation
 
