@@ -31,6 +31,7 @@ end
 
 local format = require("prime-send.format")
 local reference = require("prime-send.reference")
+local scratch = require("prime-send.scratch")
 local sender = require("prime-send.send")
 
 local function echo(msg)
@@ -45,50 +46,63 @@ local function failure_matches(stderr)
     or stderr:find("Ambiguous active session", 1, true) ~= nil
 end
 
+--- Deliver a composed message through the pinning and send path: ensure a
+--- pinned agent, deliver, and on an unknown or ambiguous active session
+--- failure reopen the selector and resend once.
+---@param message string
+local function deliver_pinned(message)
+  local function deliver(identity, retried)
+    sender.send(identity, message, function(result)
+      if result.code == 0 then
+        return
+      end
+      if not failure_matches(result.stderr) or retried then
+        return
+      end
+      agents.select_agent(function(new_identity)
+        if not new_identity then
+          echo("prime-send: aborted")
+          return
+        end
+        deliver(new_identity, true)
+      end)
+    end)
+  end
+
+  local identity = state.pinned()
+  if not identity then
+    agents.select_agent(function(chosen)
+      if not chosen then
+        echo("prime-send: aborted")
+        return
+      end
+      deliver(chosen, false)
+    end)
+    return
+  end
+
+  deliver(identity, false)
+end
+
 --- Send a message about the current buffer position to the pinned agent.
 --- Prompts for the comment, ensures a pinned agent, composes the wire-format
---- message, and delivers it. A failed delivery caused by an unknown or
+--- message, and delivers it. An empty comment opens the scratch buffer for
+--- extended input instead. A failed delivery caused by an unknown or
 --- ambiguous active session reopens the selector and resends once.
 function M.prime_send()
   vim.ui.input({ prompt = "Comment: " }, function(comment)
     if not comment or comment == "" then
-      echo("prime-send: empty message")
-      return
-    end
-
-    local message = format.single_line(reference.for_buffer(vim.api.nvim_get_current_buf()), comment)
-
-    local function deliver(identity, retried)
-      sender.send(identity, message, function(result)
-        if result.code == 0 then
+      local ref = reference.for_buffer(vim.api.nvim_get_current_buf())
+      scratch.open(ref, function(message)
+        if not message then
           return
         end
-        if not failure_matches(result.stderr) or retried then
-          return
-        end
-        agents.select_agent(function(new_identity)
-          if not new_identity then
-            echo("prime-send: aborted")
-            return
-          end
-          deliver(new_identity, true)
-        end)
-      end)
-    end
-
-    local identity = state.pinned()
-    if not identity then
-      agents.select_agent(function(chosen)
-        if not chosen then
-          echo("prime-send: aborted")
-          return
-        end
-        deliver(chosen, false)
+        deliver_pinned(message)
       end)
       return
     end
 
-    deliver(identity, false)
+    deliver_pinned(format.single_line(reference.for_buffer(vim.api.nvim_get_current_buf()), comment))
   end)
 end
 
