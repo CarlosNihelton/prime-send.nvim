@@ -1,0 +1,21 @@
+local prime_send = require("prime-send")
+
+describe("prime-send.setup", function()
+  it("returns the merged configuration with defaults", function()
+    local cfg = prime_send.setup({})
+    assert.are.same({ cmd = "prime-agent", busy = "send" }, cfg)
+    assert.are.same({ cmd = "prime-agent", busy = "send" }, prime_send.config)
+  end)
+
+  it("merges user options over the defaults", function()
+    local cfg = prime_send.setup({ cmd = "prime-agent-custom" })
+    assert.are.same({ cmd = "prime-agent-custom", busy = "send" }, cfg)
+    assert.are.equal("prime-agent-custom", prime_send.config.cmd)
+  end)
+
+  it("raises when busy is not one of send, steer, follow-up", function()
+    assert.has_error(function()
+      prime_send.setup({ busy = "banana" })
+    end)
+  end)
+end)
