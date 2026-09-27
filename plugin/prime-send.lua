@@ -13,9 +13,9 @@ vim.api.nvim_create_user_command("PrimeSendSelectAgent", function()
   prime_send.select_agent(function() end)
 end, { desc = "Select and pin the agent that receives subsequent messages" })
 
-vim.api.nvim_create_user_command("PrimeSendMultiple", function()
-  prime_send.send_multiple()
-end, { desc = "Send every pending entry as a single aggregated message" })
+vim.api.nvim_create_user_command("PrimeSendMultiple", function(opts)
+  prime_send.send_multiple({ bang = opts.bang })
+end, { desc = "Send every pending entry as a single aggregated message", bang = true })
 
 vim.api.nvim_create_user_command("PrimeSendMultipleCancel", function()
   prime_send.send_multiple_cancel()

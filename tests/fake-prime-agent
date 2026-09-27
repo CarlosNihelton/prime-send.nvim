@@ -1,11 +1,16 @@
 #!/bin/sh
 # Fake prime-agent CLI for tests.
+
 if [ "$1" = "list" ]; then
   cat "$(dirname "$0")/golden/list.json"
   exit 0
 fi
 
 if [ "$1" = "send" ]; then
+  # Record every delivery when the test environment asks for it.
+  if [ -n "$PRIME_SEND_TEST_MARKER" ]; then
+    echo x >> "$PRIME_SEND_TEST_MARKER" 2>/dev/null
+  fi
   # Echo every argv element NUL-separated to stdout.
   for arg in "$@"; do
     printf '%s\0' "$arg"

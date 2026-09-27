@@ -23,4 +23,12 @@ function M.multi_line(reference, body)
   return table.concat(lines, "\n")
 end
 
+--- Join the entries of an aggregated send with a single blank line and no
+--- numbering (ADR 1.1).
+---@param texts string[] the composed entries
+---@return string message
+function M.aggregate(texts)
+  return table.concat(texts, "\n\n")
+end
+
 return M

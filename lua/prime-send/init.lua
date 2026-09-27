@@ -50,10 +50,14 @@ end
 --- pinned agent, deliver, and on an unknown or ambiguous active session
 --- failure reopen the selector and resend once.
 ---@param message string
-local function deliver_pinned(message)
+---@param on_delivered nil|fun()
+local function deliver_pinned(message, on_delivered)
   local function deliver(identity, retried)
     sender.send(identity, message, function(result)
       if result.code == 0 then
+        if on_delivered then
+          on_delivered()
+        end
         return
       end
       if not failure_matches(result.stderr) or retried then
@@ -84,37 +88,70 @@ local function deliver_pinned(message)
   deliver(identity, false)
 end
 
+--- The shared capture flow: prompt for the comment, opening the scratch
+--- buffer on empty input, and hand the composed entry to on_entry.
+---@param on_entry fun(message: string|nil)
+local function capture(on_entry)
+  vim.ui.input({ prompt = "Comment: " }, function(comment)
+    if not comment or comment == "" then
+      local ref = reference.for_buffer(vim.api.nvim_get_current_buf())
+      scratch.open(ref, on_entry)
+      return
+    end
+
+    on_entry(format.single_line(reference.for_buffer(vim.api.nvim_get_current_buf()), comment))
+  end)
+end
+
 --- Send a message about the current buffer position to the pinned agent.
 --- Prompts for the comment, ensures a pinned agent, composes the wire-format
 --- message, and delivers it. An empty comment opens the scratch buffer for
 --- extended input instead. A failed delivery caused by an unknown or
 --- ambiguous active session reopens the selector and resends once.
 function M.prime_send()
-  vim.ui.input({ prompt = "Comment: " }, function(comment)
-    if not comment or comment == "" then
-      local ref = reference.for_buffer(vim.api.nvim_get_current_buf())
-      scratch.open(ref, function(message)
-        if not message then
-          return
-        end
-        deliver_pinned(message)
-      end)
+  capture(function(message)
+    if not message then
       return
     end
-
-    deliver_pinned(format.single_line(reference.for_buffer(vim.api.nvim_get_current_buf()), comment))
+    deliver_pinned(message)
   end)
+end
+
+--- The aggregated send flow. Without a bang, run the same capture flow as
+--- prime_send but append the composed entry to the pending queue instead of
+--- delivering. With a bang, deliver every pending entry as one message
+--- composed by aggregate and clear the queue.
+---@param opts nil|table { bang = boolean }
+function M.send_multiple(opts)
+  if opts and opts.bang then
+    local entries = state.entries()
+    if #entries == 0 then
+      echo("prime-send: nothing pending")
+      return
+    end
+    deliver_pinned(format.aggregate(entries), function()
+      state.clear()
+    end)
+    return
+  end
+
+  capture(function(message)
+    if not message then
+      return
+    end
+    state.add_entry(message)
+    echo(string.format("prime-send: %d pending", #state.entries()))
+  end)
+end
+
+--- Clear the pending queue and echo the discarded count.
+function M.send_multiple_cancel()
+  echo(string.format("prime-send: discarded %d", state.clear()))
 end
 
 --- Open the selector and pin the chosen agent for subsequent messages.
 function M.select_agent(on_pick)
   return agents.select_agent(on_pick)
 end
-
---- Open the pending queue view for an aggregated send.
-function M.send_multiple() end
-
---- Cancel the pending queue of an aggregated send.
-function M.send_multiple_cancel() end
 
 return M
