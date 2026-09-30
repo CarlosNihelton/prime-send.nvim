@@ -1,6 +1,11 @@
+local selector = require("prime-send.selector")
 local state = require("prime-send.state")
 
 local M = {}
+
+local function echo(msg)
+  vim.api.nvim_echo({ { msg, "WarningMsg" } }, true, {})
+end
 
 --- Parse the output of `prime-agent list --json --all` into session tables.
 --- Fields are nil when the source record omits them.
@@ -131,12 +136,11 @@ end
 
 M.relative_age = relative_age
 
---- One display string per session, active sessions first, then most recently
---- modified. Format: `id · name-or-dash · lifecycle · activity · summary`
---- where the summary carries the model for active sessions only.
+--- The sessions ordered for display: active sessions first, then most
+--- recently modified.
 ---@param sessions table[]
----@return string[] entries
-function M.selector_entries(sessions)
+---@return table[] sorted
+function M.sorted_sessions(sessions)
   local sorted = vim.deepcopy(sessions)
   table.sort(sorted, function(a, b)
     if a.is_active ~= b.is_active then
@@ -144,6 +148,16 @@ function M.selector_entries(sessions)
     end
     return iso_to_epoch(a.modified) > iso_to_epoch(b.modified)
   end)
+  return sorted
+end
+
+--- One display string per session, active sessions first, then most recently
+--- modified. Format: `id · name-or-dash · lifecycle · activity · summary`
+--- where the summary carries the model for active sessions only.
+---@param sessions table[]
+---@return string[] entries
+function M.selector_entries(sessions)
+  local sorted = M.sorted_sessions(sessions)
 
   local entries = {}
   for _, session in ipairs(sorted) do
@@ -185,35 +199,53 @@ function M.pick_identity(session)
 end
 
 --- Spawn the configured command with `list --json --all`, parse the listing,
---- and offer the selector. On confirm the chosen session is pinned and
---- on_pick receives its identity; on cancel on_pick receives nil.
+--- and offer the floating selector. On confirm the chosen session is pinned
+--- and on_pick receives its identity; on cancel on_pick receives nil. A
+--- command that cannot be spawned or a listing that yields no sessions
+--- echoes a warning instead, and on_pick is never called.
 ---@param on_pick fun(identity: string|nil)
 function M.select_agent(on_pick)
   local config = require("prime-send").config
   local stdout = vim.uv.new_pipe(false)
-  local chunks = {}
+  local stderr = vim.uv.new_pipe(false)
+  local out_chunks, err_chunks = {}, {}
   local handle
-  local exited = false
-  local eof = false
+  local exit_code = 0
+  local pending = 3 -- process exit + two pipe end-of-streams
   local finished = false
 
-  --- Parse and offer the selector once the process has exited AND the
-  --- stdout stream has ended, so the tail of the output is never lost.
+  --- Parse and offer the selector once the process has exited AND both
+  --- stdout and stderr have ended, so the tail of the output is never lost.
   local function finish()
-    if finished or not exited or not eof then
+    if finished or pending > 0 then
       return
     end
     finished = true
     stdout:read_stop()
+    stderr:read_stop()
     stdout:close()
+    stderr:close()
     if handle and not handle:is_closing() then
       handle:close()
     end
     vim.schedule(function()
-      local sessions = M.parse_list(table.concat(chunks))
+      local sessions = M.parse_list(table.concat(out_chunks))
+      local sorted = M.sorted_sessions(sessions)
       local entries = M.selector_entries(sessions)
+      if #entries == 0 then
+        if exit_code ~= 0 then
+          local detail = vim.trim(table.concat(err_chunks))
+          if detail == "" then
+            detail = "no output"
+          end
+          echo(string.format("prime-send: prime-agent list failed: %s", detail))
+        else
+          echo("prime-send: no agents found")
+        end
+        return
+      end
 
-      vim.ui.select(entries, { prompt = "Select an agent" }, function(choice, idx)
+      selector.open(entries, function(choice)
         if not choice then
           state.set_pinned(nil)
           if on_pick then
@@ -221,7 +253,7 @@ function M.select_agent(on_pick)
           end
           return
         end
-        local identity = M.pick_identity(sessions[idx])
+        local identity = M.pick_identity(sorted[choice])
         state.set_pinned(identity)
         if on_pick then
           on_pick(identity)
@@ -232,22 +264,34 @@ function M.select_agent(on_pick)
 
   handle = vim.uv.spawn(config.cmd, {
     args = { "list", "--json", "--all" },
-    stdio = { nil, stdout, nil },
-  }, function()
-    exited = true
+    stdio = { nil, stdout, stderr },
+  }, function(code)
+    exit_code = code
+    pending = pending - 1
     finish()
   end)
 
   if not handle then
+    finished = true
     stdout:close()
-    error(string.format("prime-send: failed to spawn %q", config.cmd))
+    stderr:close()
+    echo(string.format("prime-send: failed to spawn %q", config.cmd))
+    return
   end
 
   stdout:read_start(function(_, data)
     if data then
-      chunks[#chunks + 1] = data
+      out_chunks[#out_chunks + 1] = data
     else
-      eof = true
+      pending = pending - 1
+      finish()
+    end
+  end)
+  stderr:read_start(function(_, data)
+    if data then
+      err_chunks[#err_chunks + 1] = data
+    else
+      pending = pending - 1
       finish()
     end
   end)

@@ -2,6 +2,7 @@ local tests_dir = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h")
 local state = require("prime-send.state")
 local format = require("prime-send.format")
 local prime_send_module = require("prime-send")
+local selector = require("prime-send.selector")
 
 local marker
 
@@ -89,9 +90,9 @@ describe("PrimeSendMultiple flow", function()
     vim.env.PRIME_SEND_TEST_ARGV = argv_file
 
     -- The selector opens at the last moment: on the bang form only.
-    local saved_select = vim.ui.select
-    vim.ui.select = function(items, _opts, on_choice)
-      on_choice(items[2], 2)
+    local saved_open = selector.open
+    selector.open = function(_entries, on_choice)
+      on_choice(2)
     end
 
     prime_send_module.send_multiple({ bang = true })
@@ -99,7 +100,7 @@ describe("PrimeSendMultiple flow", function()
     assert.is_true(wait_for(function()
       return spawn_count() == 1 and #state.entries() == 0
     end))
-    vim.ui.select = saved_select
+    selector.open = saved_open
     assert.truthy(state.pinned())
 
     local fh = io.open(argv_file, "rb")
@@ -151,9 +152,9 @@ describe("PrimeSendMultiple flow", function()
     vim.ui.input = function(_opts, on_confirm)
       on_confirm("direct comment")
     end
-    local saved_select = vim.ui.select
-    vim.ui.select = function(items, _opts, on_choice)
-      on_choice(items[1], 1)
+    local saved_open = selector.open
+    selector.open = function(_entries, on_choice)
+      on_choice(1)
     end
 
     prime_send_module.prime_send()
@@ -162,7 +163,7 @@ describe("PrimeSendMultiple flow", function()
       return spawn_count() == 1
     end))
     vim.ui.input = saved_input
-    vim.ui.select = saved_select
+    selector.open = saved_open
 
     assert.is_true(wait_for(function()
       return spawn_count() == 1

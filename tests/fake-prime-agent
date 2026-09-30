@@ -5,6 +5,10 @@ if [ "$1" = "list" ]; then
   if [ "$PRIME_SEND_TEST_LISTING" = "slow" ]; then
     sleep 0.3
   fi
+  if [ "$PRIME_SEND_TEST_LISTING" = "broken" ]; then
+    echo "not json at all"
+    exit 0
+  fi
   if [ "$PRIME_SEND_TEST_LISTING" = "large" ]; then
     cat "$(dirname "$0")/golden/list-large.json"
   else
@@ -31,6 +35,11 @@ if [ "$1" = "send" ]; then
   # Fail once when the marker sits beside this script.
   if [ -f "$(dirname "$0")/fail-once" ]; then
     rm -f "$(dirname "$0")/fail-once"
+    echo "Error: Unknown active session: $2" >&2
+    exit 1
+  fi
+  # Fail persistently when the test environment asks for it.
+  if [ -n "$PRIME_SEND_TEST_FAIL" ]; then
     echo "Error: Unknown active session: $2" >&2
     exit 1
   fi

@@ -54,6 +54,10 @@ end
 local function deliver_pinned(message, on_delivered)
   local function deliver(identity, retried)
     sender.send(identity, message, function(result)
+      if result.error then
+        echo(result.error)
+        return
+      end
       if result.code == 0 then
         if on_delivered then
           on_delivered()
@@ -61,6 +65,12 @@ local function deliver_pinned(message, on_delivered)
         return
       end
       if not failure_matches(result.stderr) or retried then
+        local detail = type(result.stderr) == "string" and vim.trim(result.stderr) or ""
+        if detail == "" then
+          echo(string.format("prime-send: delivery failed with exit code %s", result.code))
+        else
+          echo(string.format("prime-send: delivery failed: %s", detail))
+        end
         return
       end
       agents.select_agent(function(new_identity)
