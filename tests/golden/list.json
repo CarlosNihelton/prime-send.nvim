@@ -1,0 +1,36 @@
+{
+  "sessions": [
+    {
+      "id": "abcd1234ef01",
+      "sessionId": "11111111-2222-3333-4444-555555555555",
+      "lifecycle": "live",
+      "activity": "working",
+      "isSessionActive": true,
+      "model": { "id": "z-ai/glm-5.3", "name": "Z.ai: GLM 5.3" },
+      "cwd": "/home/user/project",
+      "messageCount": 42,
+      "modified": "2026-09-27T09:58:53.336Z"
+    },
+    {
+      "id": "9876543210ab",
+      "sessionId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      "sessionName": "my-session",
+      "lifecycle": "live",
+      "activity": "idle",
+      "isSessionActive": false,
+      "model": { "id": "z-ai/glm-5.3-flash", "name": "Z.ai: GLM 5.3 Flash" },
+      "cwd": "/home/user/other",
+      "messageCount": 7,
+      "modified": "2026-09-27T08:30:00.000Z"
+    },
+    {
+      "sessionId": "cccccccc-dddd-eeee-ffff-000000000000",
+      "lifecycle": "archived",
+      "activity": "idle",
+      "isSessionActive": false,
+      "cwd": "/home/user/old",
+      "messageCount": 100,
+      "modified": "2026-09-20T10:00:00.000Z"
+    }
+  ]
+}

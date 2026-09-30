@@ -1,0 +1,152 @@
+*prime-send.txt*   Send editor context to Prime agents from Neovim
+
+Author: Carlos Nihelton <carlos.nihelton@canonical.com>
+License: MIT
+
+==============================================================================
+INTRODUCTION                                                    *prime-send*
+
+prime-send.nvim sends a message to a Prime agent (a running prime-agent
+session) straight from the editor, augmented with a reference to the file and
+line you are looking at.
+
+Messages are delivered by spawning the configured command (see |prime-send-cmd|)
+with the `send` subcommand. The message is passed as a direct process argument
+list; no shell and no stdin are involved.
+
+==============================================================================
+COMMANDS                                              *prime-send-commands*
+
+:PrimeSend                                                   *:PrimeSend*
+    Prompt for a comment and deliver `{reference} Comment: {comment}` to the
+    pinned agent. With no agent pinned, the selector opens right before the
+    first delivery. An empty comment opens the scratch buffer for extended
+    input instead (see |prime-send-scratch|).
+
+:PrimeSendSelectAgent                                 *:PrimeSendSelectAgent*
+    List the agents known by `prime-agent list --json --all` and pin the
+    chosen one. Subsequent messages are delivered to it until re-pinned.
+
+:PrimeSendMultiple[!]                                 *:PrimeSendMultiple*
+    Without a bang, capture a comment as |:PrimeSend| does and append the
+    composed entry to the pending queue instead of delivering. Repeat as you
+    review different locations. Echoes the pending count.
+    With a bang, deliver every pending entry as a single message, entries
+    separated by one blank line, and clear the queue. With an empty queue the
+    bang form echoes `prime-send: nothing pending` and spawns nothing.
+
+:PrimeSendMultipleCancel                         *:PrimeSendMultipleCancel*
+    Discard every pending entry and echo the discarded count.
+
+==============================================================================
+OPTIONS                                                  *prime-send-options*
+
+setup({opts})                                          *prime-send-setup()*
+    Merge user options over the defaults and validate them. Returns the
+    merged configuration.
+        require("prime-send").setup({ cmd = "prime-agent", busy = "send" })
+
+*prime-send-cmd*
+    cmd (string, default "prime-agent") - the command spawned for both the
+    `list --json --all` listing and the `send` delivery. Can be an absolute
+    path to a wrapper or a different binary.
+
+*prime-send-busy*
+    busy (string, default "send") - the delivery mode. One of:
+        "send"      deliver and wait (default, no flag passed)
+        "steer"     pass `--steer` between the identity and `--message`
+        "follow-up" pass `--follow-up` the same way
+    Any other value makes setup() raise an error.
+
+==============================================================================
+MESSAGE FORMAT                                          *prime-send-format*
+
+Every entry carries its own reference and is machine-greppable in its first
+line.
+
+Single-line comment: one line per location.~
+
+    src/x.lua:42 Comment: fix this
+
+Multi-line comment: the first line is the reference plus ` Comment:` alone,
+and the body follows verbatim on the next lines.~
+
+    src/x.lua:42 Comment:
+    the body
+    follows here
+
+Aggregated send: entries separated by one blank line, no numbering.~
+
+    src/x.lua:42 Comment: fix this
+
+    src/y.lua:7 Comment:
+    another entry
+
+==============================================================================
+BUFFER SUPPORT                                          *prime-send-buffers*
+
+*prime-send-normal*
+    Normal buffer: the reference is the file path relative to the project
+    root (the git toplevel of the buffer directory, else the root of the
+    first attached LSP client), then a colon, then the cursor line. In visual
+    mode the cursor line becomes `{start}-{end}`, normalized ascending.
+    Without a project root the absolute path is kept.
+
+*prime-send-diff* *prime-send-patch*
+    Diff and patch buffers (filetype diff or a `.patch`/`.diff` file): the
+    cursor position inside a hunk is mapped through the diff to the line it
+    denotes in the referenced file, so the agent sees the exact line of the
+    source file, not of the patch. Caveats:
+      - positions on headers or between hunks map to nothing and fall back to
+        the patch file reference itself;
+      - deletion-only hunks map to the old-side line numbers;
+      - files removed by a patch are referenced by their recorded path.
+
+*prime-send-fugitive*
+    Fugitive buffers (`fugitive://` names with a 40+ hex sha or a single
+    stage digit 0-3): the reference is resolved to the working-tree file
+    path via |FugitiveReal| when available, else by joining the toplevel
+    derived from the git dir with the URL-decoded path. Caveats: a buffer
+    without a work-tree file path (such as an index buffer) echoes
+    `prime-send: no reference for this buffer` and sends nothing; a linked
+    worktree is detected through its admin directory and the reference
+    resolves to the file path under the linked worktree root.
+
+==============================================================================
+SCRATCH BUFFER                                          *prime-send-scratch*
+
+An empty comment prompt opens an unlisted markdown buffer in a centered
+floating window, prefilled with `{reference} Comment:`. Writing the buffer
+delivers the composed message; quitting without writing sends nothing.
+
+==============================================================================
+INSTALLATION                                        *prime-send-installation*
+
+lazy.nvim: >
+
+    {
+      "CarlosNihelton/prime-send.nvim",
+      config = function()
+        require("prime-send").setup()
+      end,
+    }
+<
+
+Keymap examples: >
+
+    vim.keymap.set("n", "<leader>as", ":PrimeSend<CR>", { desc = "Send to agent" })
+    vim.keymap.set("v", "<leader>as", ":PrimeSend<CR>", { desc = "Send selection to agent" })
+    vim.keymap.set("n", "<leader>aa", ":PrimeSendSelectAgent<CR>", { desc = "Select agent" })
+    vim.keymap.set("n", "<leader>am", ":PrimeSendMultiple<CR>", { desc = "Queue comment" })
+    vim.keymap.set("n", "<leader>aM", ":PrimeSendMultiple!<CR>", { desc = "Send queued comments" })
+<
+
+Run `:helptags ALL` after installing to enable this help.
+
+==============================================================================
+DISCLAIMER                                            *prime-send-disclaimer*
+
+This project is independent software. It is not affiliated with, endorsed by,
+or sponsored by Prime Intellect, the makers of Prime Agent.
+
+vim:tw=78:ts=8:ft=help:norl:
