@@ -36,31 +36,59 @@ function M.parse_list(json_str)
 end
 
 --- Convert an ISO-8601 timestamp to a Unix epoch (0 when unparsable).
---- The naive fields denote UTC, so the local timezone offset is subtracted
---- from the local-time interpretation of os.time.
+--- Naive timestamps are UTC. Conversion uses calendar arithmetic so it does
+--- not depend on the process timezone or the host's timezone cache.
 ---@param iso string|nil
 ---@return number
 local function iso_to_epoch(iso)
   if type(iso) ~= "string" then
     return 0
   end
-  local y, mo, d, h, mi, s = iso:match("^(%d%d%d%d)-(%d%d)-(%d%d)T(%d%d):(%d%d):(%d%d)")
+
+  local y, mo, d, h, mi, s, suffix = iso:match("^(%d%d%d%d)%-(%d%d)%-(%d%d)T(%d%d):(%d%d):(%d%d)(.*)$")
   if not y then
     return 0
   end
-  local fields = { year = y, month = mo, day = d, hour = h, min = mi, sec = s }
-  local local_now = os.date("*t")
-  local utc_now = os.date("!*t")
-  local offset = os.time(local_now)
-    - os.time({
-      year = utc_now.year,
-      month = utc_now.month,
-      day = utc_now.day,
-      hour = utc_now.hour,
-      min = utc_now.min,
-      sec = utc_now.sec,
-    })
-  return os.time(fields) + offset
+
+  y, mo, d, h, mi, s = tonumber(y), tonumber(mo), tonumber(d), tonumber(h), tonumber(mi), tonumber(s)
+  local days_in_month = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
+  local leap_year = y % 4 == 0 and (y % 100 ~= 0 or y % 400 == 0)
+  if leap_year then
+    days_in_month[2] = 29
+  end
+  if mo < 1 or mo > 12 or d < 1 or d > days_in_month[mo] or h > 23 or mi > 59 or s > 59 then
+    return 0
+  end
+
+  local offset = 0
+  local remainder = suffix:match("^%.%d+(.*)$")
+  if remainder then
+    suffix = remainder
+  end
+  if suffix ~= "" and suffix ~= "Z" and suffix ~= "z" then
+    local sign, offset_hours, offset_minutes = suffix:match("^([+-])(%d%d):?(%d%d)$")
+    if not sign then
+      return 0
+    end
+    offset_hours, offset_minutes = tonumber(offset_hours), tonumber(offset_minutes)
+    if offset_hours > 23 or offset_minutes > 59 then
+      return 0
+    end
+    offset = (offset_hours * 60 + offset_minutes) * 60
+    if sign == "-" then
+      offset = -offset
+    end
+  end
+
+  -- Days since 1970-01-01 in the proleptic Gregorian calendar.
+  local adjusted_year = y - (mo <= 2 and 1 or 0)
+  local era = math.floor(adjusted_year / 400)
+  local year_of_era = adjusted_year - era * 400
+  local adjusted_month = mo + (mo > 2 and -3 or 9)
+  local day_of_year = math.floor((153 * adjusted_month + 2) / 5) + d - 1
+  local day_of_era = year_of_era * 365 + math.floor(year_of_era / 4) - math.floor(year_of_era / 100) + day_of_year
+  local days = era * 146097 + day_of_era - 719468
+  return days * 86400 + h * 3600 + mi * 60 + s - offset
 end
 
 M.iso_to_epoch = iso_to_epoch

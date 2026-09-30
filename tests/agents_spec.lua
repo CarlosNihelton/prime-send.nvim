@@ -71,15 +71,15 @@ describe("prime-send.agents.iso_to_epoch", function()
     assert.are.equal(0, agents.iso_to_epoch("1970-01-01T00:00:00.000Z"))
   end)
 
+  it("applies an explicit ISO-8601 UTC offset", function()
+    assert.are.equal(0, agents.iso_to_epoch("1970-01-01T05:30:00+05:30"))
+  end)
+
   it("maps 1970-01-01T00:00:00 to 0 under a non-UTC timezone", function()
     local saved_tz = os.getenv("TZ")
     vim.env.TZ = "Asia/Kolkata"
     local ok, epoch = pcall(agents.iso_to_epoch, "1970-01-01T00:00:00.000Z")
-    if saved_tz then
-      vim.env.TZ = saved_tz
-    else
-      vim.env.TZ = ""
-    end
+    vim.env.TZ = saved_tz
     if not ok then
       error(epoch)
     end
