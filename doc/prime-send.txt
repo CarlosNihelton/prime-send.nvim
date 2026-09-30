@@ -12,7 +12,8 @@ line you are looking at.
 
 Messages are delivered by spawning the configured command (see |prime-send-cmd|)
 with the `send` subcommand. The message is passed as a direct process argument
-list; no shell and no stdin are involved.
+list; no shell and no stdin are involved. With no agent pinned, a floating
+selector lists the agents right before the first delivery.
 
 ==============================================================================
 COMMANDS                                              *prime-send-commands*
@@ -24,8 +25,9 @@ COMMANDS                                              *prime-send-commands*
     input instead (see |prime-send-scratch|).
 
 :PrimeSendSelectAgent                                 *:PrimeSendSelectAgent*
-    List the agents known by `prime-agent list --json --all` and pin the
-    chosen one. Subsequent messages are delivered to it until re-pinned.
+    Open the floating selector (see |prime-send-selector|) over the agents
+    known by `prime-agent list --json --all` and pin the chosen one.
+    Subsequent messages are delivered to it until re-pinned.
 
 :PrimeSendMultiple[!]                                 *:PrimeSendMultiple*
     Without a bang, capture a comment as |:PrimeSend| does and append the
@@ -111,6 +113,27 @@ BUFFER SUPPORT                                          *prime-send-buffers*
     `prime-send: no reference for this buffer` and sends nothing; a linked
     worktree is detected through its admin directory and the reference
     resolves to the file path under the linked worktree root.
+
+==============================================================================
+SELECTOR                                                *prime-send-selector*
+
+The selector is a centered floating window showing one line per agent: id,
+name, lifecycle, activity, and a summary. Move with the normal navigation
+keys, then:
+
+    <CR>        pick the agent under the cursor and pin it
+    <Esc>, q    cancel (the previous pin, if any, is cleared)
+    close       closing the window cancels as well
+
+Failures are reported as warnings and never raise:
+
+    prime-send: failed to spawn "..."          the command cannot be spawned
+    prime-send: no agents found                the listing yielded no sessions
+    prime-send: prime-agent list failed: ...   the listing command failed
+    prime-send: delivery failed: ...           the send command failed
+
+If `prime-agent` is not on the PATH of the environment Neovim runs in, set the
+absolute path in the `cmd` option (see |prime-send-cmd|).
 
 ==============================================================================
 SCRATCH BUFFER                                          *prime-send-scratch*

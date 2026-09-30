@@ -5,20 +5,35 @@
 prime-send.nvim sends a message to a Prime agent from the editor, augmented with a reference to
 the file and line you are looking at. Messages are delivered by spawning the configured command
 with the `send` subcommand and the message passed as a direct process argument list - no shell
-and no stdin are involved. If there is no previously selected agent, a `vim.ui.select` selector
-opens right before the first delivery, so the plugin never gets in your way when you have a hot
-idea to type to your agent right away. The selection persists and can be changed at any time with
-`:PrimeSendSelectAgent`.
+and no stdin are involved. If there is no previously selected agent, a floating selector lists
+the agents right before the first delivery, so the plugin never gets in your way when you have a
+hot idea to type to your agent right away. The selection persists and can be changed at any time
+with `:PrimeSendSelectAgent`.
 
 ## Commands
 
 | Command | Description |
 | --- | --- |
 | `:PrimeSend` | Prompt for a comment and deliver `{reference} Comment: {comment}` to the pinned agent on Enter (<CR>). An empty comment opens the scratch buffer for extended input. |
-| `:PrimeSendSelectAgent` | List the agents known by `prime-agent list --json --all` and pin the chosen one. |
+| `:PrimeSendSelectAgent` | Open the floating selector over the agents known by `prime-agent list --json --all` and pin the chosen one. |
 | `:PrimeSendMultiple` | Capture a comment as `:PrimeSend` does, but append the composed entry to the pending queue instead of delivering. Echoes the pending count. |
 | `:PrimeSendMultiple!` | Deliver every pending entry as a single message, entries separated by one blank line, and clear the queue. Echoes `prime-send: nothing pending` and spawns nothing when the queue is empty. |
 | `:PrimeSendMultipleCancel` | Discard every pending entry and echo the discarded count. |
+
+## Selector
+
+The selector is a centered floating window showing one line per agent: id, name, lifecycle,
+activity, and a summary. Move with the normal navigation keys and:
+
+- `<CR>` picks the agent under the cursor and pins it.
+- `<Esc>` or `q` cancels, leaving the previous pin (if any) cleared.
+- Closing the window cancels as well.
+
+Failures are reported as warnings and never raise: a command that cannot be spawned echoes
+`prime-send: failed to spawn "..."`, a listing that yields no agents echoes
+`prime-send: no agents found` (or the listing error), and a failed delivery echoes
+`prime-send: delivery failed: ...` with the command output. If `prime-agent` is not on the PATH
+of the environment Neovim runs in, set the absolute path in the `cmd` option.
 
 ## Options
 
