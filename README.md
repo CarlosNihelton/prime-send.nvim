@@ -81,6 +81,12 @@ another entry
   is detected through its admin directory and the reference resolves to the file path under the
   linked worktree root.
 
+## Development
+
+Run `make check` to check formatting, lint the Lua files, and run the test suite. It fetches
+Plenary into the ignored `.deps/` directory on the first test run. The command requires Make, Git,
+Neovim, StyLua, and Luacheck.
+
 ## Installation
 
 With [lazy.nvim](https://github.com/folke/lazy.nvim):
