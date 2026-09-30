@@ -14,7 +14,7 @@ idea to type to your agent right away. The selection persists and can be changed
 
 | Command | Description |
 | --- | --- |
-| `:PrimeSend` | Prompt for a comment and deliver `{reference} Comment: {comment}` to the pinned agent. An empty comment opens the scratch buffer for extended input. |
+| `:PrimeSend` | Prompt for a comment and deliver `{reference} Comment: {comment}` to the pinned agent on Enter (<CR>). An empty comment opens the scratch buffer for extended input. |
 | `:PrimeSendSelectAgent` | List the agents known by `prime-agent list --json --all` and pin the chosen one. |
 | `:PrimeSendMultiple` | Capture a comment as `:PrimeSend` does, but append the composed entry to the pending queue instead of delivering. Echoes the pending count. |
 | `:PrimeSendMultiple!` | Deliver every pending entry as a single message, entries separated by one blank line, and clear the queue. Echoes `prime-send: nothing pending` and spawns nothing when the queue is empty. |

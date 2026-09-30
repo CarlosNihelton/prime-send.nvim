@@ -1,6 +1,6 @@
 *prime-send.txt*   Send editor context to Prime agents from Neovim
 
-Author: CarlosNihelton
+Author: Carlos Nihelton <carlos.nihelton@canonical.com>
 License: MIT
 
 ==============================================================================
@@ -62,7 +62,7 @@ setup({opts})                                          *prime-send-setup()*
 MESSAGE FORMAT                                          *prime-send-format*
 
 Every entry carries its own reference and is machine-greppable in its first
-line (ADR 1.1).
+line.
 
 Single-line comment: one line per location.~
 
