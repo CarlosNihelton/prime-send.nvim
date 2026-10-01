@@ -42,21 +42,29 @@ describe("prime-send.agents.parse_list", function()
 end)
 
 describe("prime-send.agents.selector_entries", function()
-  it("lists the active session before both saved sessions", function()
+  it("lists the active session before both saved sessions, with aligned columns", function()
     local sessions = agents.parse_list(fixture())
     local entries = agents.selector_entries(sessions)
     assert.are.equal(3, #entries)
-    assert.truthy(entries[1]:find("11111111%-2222%-3333%-4444%-555555555555"))
-    assert.truthy(entries[2]:find("my%-session"))
-    assert.truthy(entries[3]:find("cccccccc%-dddd%-eeee%-ffff%-000000000000"))
+    -- the active session leads, saved sessions follow most-recent-first,
+    -- and the id sits far right on every line
+    assert.truthy(entries[1]:find("11111111%-2222%-3333%-4444%-555555555555$"))
+    assert.truthy(entries[2]:find("^my%-session"))
+    assert.truthy(entries[3]:find("cccccccc%-dddd%-eeee%-ffff%-000000000000$"))
     -- summary shape for the active session: model, cwd basename, msg count
     assert.truthy(entries[1]:find("Z%.ai: GLM 5%.3"))
-    assert.truthy(entries[1]:find("project · 42 msgs"))
-    -- summary shape for a saved session: no model, cwd basename, msg count
-    assert.truthy(entries[2]:find("other · 7 msgs"))
+    assert.truthy(entries[1]:find("project · 42"))
+    -- the model column stays empty for saved sessions
     assert.is_nil(entries[2]:find("GLM"))
-    -- dash placeholder when the session has no name, now the leading field
-    assert.truthy(entries[1]:find("^%- · live · "))
+    -- dash placeholder for the unnamed sessions, now the leading field
+    assert.truthy(entries[1]:find("^%- "))
+    assert.truthy(entries[3]:find("^%- "))
+    -- the columns align: the lifecycle separator lands at the same offset
+    -- on every line (the widest name, my-session, is 10 columns); the
+    -- separator is sliced as two bytes because the dot is multi-byte UTF-8
+    assert.are.equal("·", entries[1]:sub(12, 13))
+    assert.are.equal("·", entries[2]:sub(12, 13))
+    assert.are.equal("·", entries[3]:sub(12, 13))
   end)
 
   it("sorts saved sessions by most recently modified", function()

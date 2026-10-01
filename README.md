@@ -22,9 +22,10 @@ with `:PrimeSendSelectAgent`.
 
 ## Selector
 
-The selector is a centered floating window titled "Select an agent" showing one line per agent:
-name, lifecycle, activity, a summary, and the session id far right. Move with the normal
-navigation keys and:
+The selector is a centered floating window titled "Select an agent" showing one line per agent,
+with every column padded so they align across lines: name, lifecycle, activity, model, working
+directory, message count, age, and the session id far right. The model column stays empty for
+saved sessions. Move with the normal navigation keys and:
 
 - `<CR>` picks the agent under the cursor and pins it.
 - `<Esc>` or `q` cancels, leaving the previous pin (if any) cleared.

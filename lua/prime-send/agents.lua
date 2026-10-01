@@ -151,42 +151,58 @@ function M.sorted_sessions(sessions)
   return sorted
 end
 
+--- Pad a field with spaces to a display width so columns align.
+---@param text string
+---@param width integer
+---@return string
+local function pad(text, width)
+  local w = vim.fn.strdisplaywidth(text)
+  if w >= width then
+    return text
+  end
+  return text .. string.rep(" ", width - w)
+end
+
 --- One display string per session, active sessions first, then most recently
---- modified. Format: `name-or-dash · lifecycle · activity · summary · id`
---- where the summary carries the model for active sessions only and the id
+--- modified. Every field is padded to the widest value across entries so the
+--- columns align: `name · lifecycle · activity · model · cwd · msgs · age ·
+--- id`, where the model column stays empty for saved sessions and the id
 --- sits far right.
 ---@param sessions table[]
 ---@return string[] entries
 function M.selector_entries(sessions)
   local sorted = M.sorted_sessions(sessions)
 
+  local name_w, lifecycle_w, activity_w, model_w, cwd_w, msgs_w, age_w = 1, 1, 1, 1, 1, 1, 1
+  for _, session in ipairs(sorted) do
+    name_w = math.max(name_w, vim.fn.strdisplaywidth(session.name or "-"))
+    lifecycle_w = math.max(lifecycle_w, vim.fn.strdisplaywidth(session.lifecycle or "-"))
+    activity_w = math.max(activity_w, vim.fn.strdisplaywidth(session.activity or "-"))
+    if session.is_active then
+      model_w = math.max(model_w, vim.fn.strdisplaywidth(session.model or "-"))
+    end
+    cwd_w = math.max(cwd_w, vim.fn.strdisplaywidth(basename(session.cwd) or "-"))
+    msgs_w = math.max(msgs_w, vim.fn.strdisplaywidth(tostring(session.message_count or 0) .. " msgs"))
+    age_w = math.max(age_w, vim.fn.strdisplaywidth(relative_age(session.modified) or "-"))
+  end
+
   local entries = {}
   for _, session in ipairs(sorted) do
-    local summary
+    local fields = {
+      pad(session.name or "-", name_w),
+      pad(session.lifecycle or "-", lifecycle_w),
+      pad(session.activity or "-", activity_w),
+    }
     if session.is_active then
-      summary = string.format(
-        "%s · %s · %s msgs · %s",
-        session.model or "-",
-        basename(session.cwd) or "-",
-        session.message_count or 0,
-        relative_age(session.modified) or "-"
-      )
+      fields[#fields + 1] = pad(session.model or "-", model_w)
     else
-      summary = string.format(
-        "%s · %s msgs · %s",
-        basename(session.cwd) or "-",
-        session.message_count or 0,
-        relative_age(session.modified) or "-"
-      )
+      fields[#fields + 1] = pad("", model_w)
     end
-    entries[#entries + 1] = string.format(
-      "%s · %s · %s · %s · %s",
-      session.name or "-",
-      session.lifecycle or "-",
-      session.activity or "-",
-      summary,
-      session.id or "-"
-    )
+    fields[#fields + 1] = pad(basename(session.cwd) or "-", cwd_w)
+    fields[#fields + 1] = pad(tostring(session.message_count or 0) .. " msgs", msgs_w)
+    fields[#fields + 1] = pad(relative_age(session.modified) or "-", age_w)
+    fields[#fields + 1] = session.id or "-"
+    entries[#entries + 1] = table.concat(fields, " · ")
   end
   return entries
 end
