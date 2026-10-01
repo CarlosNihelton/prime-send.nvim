@@ -55,8 +55,8 @@ describe("prime-send.agents.selector_entries", function()
     -- summary shape for a saved session: no model, cwd basename, msg count
     assert.truthy(entries[2]:find("other · 7 msgs"))
     assert.is_nil(entries[2]:find("GLM"))
-    -- dash placeholder when the session has no name
-    assert.truthy(entries[1]:find(" · %- · live · "))
+    -- dash placeholder when the session has no name, now the leading field
+    assert.truthy(entries[1]:find("^%- · live · "))
   end)
 
   it("sorts saved sessions by most recently modified", function()

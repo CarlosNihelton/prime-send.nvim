@@ -152,8 +152,9 @@ function M.sorted_sessions(sessions)
 end
 
 --- One display string per session, active sessions first, then most recently
---- modified. Format: `id · name-or-dash · lifecycle · activity · summary`
---- where the summary carries the model for active sessions only.
+--- modified. Format: `name-or-dash · lifecycle · activity · summary · id`
+--- where the summary carries the model for active sessions only and the id
+--- sits far right.
 ---@param sessions table[]
 ---@return string[] entries
 function M.selector_entries(sessions)
@@ -180,11 +181,11 @@ function M.selector_entries(sessions)
     end
     entries[#entries + 1] = string.format(
       "%s · %s · %s · %s · %s",
-      session.id or "-",
       session.name or "-",
       session.lifecycle or "-",
       session.activity or "-",
-      summary
+      summary,
+      session.id or "-"
     )
   end
   return entries
