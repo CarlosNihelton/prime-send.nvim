@@ -19,10 +19,11 @@ selector lists the agents right before the first delivery.
 COMMANDS                                              *prime-send-commands*
 
 :PrimeSend                                                   *:PrimeSend*
-    Prompt for a comment and deliver `{reference} Comment: {comment}` to the
-    pinned agent. With no agent pinned, the selector opens right before the
-    first delivery. An empty comment opens the scratch buffer for extended
-    input instead (see |prime-send-scratch|).
+    Capture a comment in the floating input (see |prime-send-input|) and
+    deliver `{reference} Comment: {comment}` to the pinned agent. With no
+    agent pinned, the selector opens right before the first delivery. An
+    empty comment opens the scratch buffer for extended input instead (see
+    |prime-send-scratch|).
 
 :PrimeSendSelectAgent                                 *:PrimeSendSelectAgent*
     Open the floating selector (see |prime-send-selector|) over the agents
@@ -134,6 +135,17 @@ Failures are reported as warnings and never raise:
 
 If `prime-agent` is not on the PATH of the environment Neovim runs in, set the
 absolute path in the `cmd` option (see |prime-send-cmd|).
+
+==============================================================================
+COMMENT INPUT                                          *prime-send-input*
+
+The comment prompt is a centered floating window with the prompt on its
+border, and it opens in insert mode:
+
+    <CR>        submit the typed line; leading and trailing spaces are
+                stripped, and an empty submission opens the scratch buffer
+                (see |prime-send-scratch|)
+    <Esc>       cancel; closing the window cancels as well
 
 ==============================================================================
 SCRATCH BUFFER                                          *prime-send-scratch*

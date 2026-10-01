@@ -14,7 +14,7 @@ with `:PrimeSendSelectAgent`.
 
 | Command | Description |
 | --- | --- |
-| `:PrimeSend` | Prompt for a comment and deliver `{reference} Comment: {comment}` to the pinned agent on Enter (<CR>). An empty comment opens the scratch buffer for extended input. |
+| `:PrimeSend` | Capture a comment in a floating input and deliver `{reference} Comment: {comment}` to the pinned agent. An empty comment opens the scratch buffer for extended input. |
 | `:PrimeSendSelectAgent` | Open the floating selector over the agents known by `prime-agent list --json --all` and pin the chosen one. |
 | `:PrimeSendMultiple` | Capture a comment as `:PrimeSend` does, but append the composed entry to the pending queue instead of delivering. Echoes the pending count. |
 | `:PrimeSendMultiple!` | Deliver every pending entry as a single message, entries separated by one blank line, and clear the queue. Echoes `prime-send: nothing pending` and spawns nothing when the queue is empty. |
@@ -34,6 +34,12 @@ Failures are reported as warnings and never raise: a command that cannot be spaw
 `prime-send: no agents found` (or the listing error), and a failed delivery echoes
 `prime-send: delivery failed: ...` with the command output. If `prime-agent` is not on the PATH
 of the environment Neovim runs in, set the absolute path in the `cmd` option.
+
+## Comment input
+
+The comment prompt is a centered floating window too, with the prompt on its border. It opens in
+insert mode; `<CR>` submits the typed line with leading and trailing spaces stripped, submitting
+empty opens the scratch buffer for extended input, and `<Esc>` or closing the window cancels.
 
 ## Options
 
