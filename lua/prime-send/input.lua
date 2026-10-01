@@ -17,7 +17,8 @@ function M.open(prompt, on_input)
   vim.bo[bufnr].bufhidden = "hide"
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "" })
 
-  local width = math.min(math.max(50, #prompt + 8), math.floor(vim.o.columns * 0.9))
+  -- 30% wider than the original 50-column minimum.
+  local width = math.min(math.max(65, #prompt + 8), math.floor(vim.o.columns * 0.9))
   local win = float.centered(bufnr, width, 1, { title = prompt })
 
   local finished = false
