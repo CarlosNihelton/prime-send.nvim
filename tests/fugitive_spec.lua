@@ -1,4 +1,5 @@
 local fugitive = require("prime-send.fugitive")
+local input = require("prime-send.input")
 local reference = require("prime-send.reference")
 
 local sha = string.rep("a1b2", 10) -- 40 hex chars
@@ -157,15 +158,15 @@ describe("prime_send on an unsendable fugitive index buffer", function()
         return c[1]
       end, chunks))
     end
-    local saved_input = vim.ui.input
-    vim.ui.input = function()
+    local saved_input = input.open
+    input.open = function()
       prompted = true
     end
 
     require("prime-send").prime_send()
 
     vim.api.nvim_echo = saved_echo
-    vim.ui.input = saved_input
+    input.open = saved_input
 
     assert.are.equal("prime-send: no reference for this buffer", echoed)
     assert.is_nil(prompted)

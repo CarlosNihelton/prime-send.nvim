@@ -1,4 +1,5 @@
 local reference = require("prime-send.reference")
+local input = require("prime-send.input")
 
 describe("prime-send.reference.for_buffer", function()
   after_each(function()
@@ -144,9 +145,9 @@ describe("prime-send.reference.for_buffer", function()
       return orig_for_buffer(b)
     end
 
-    local saved_input = vim.ui.input
-    vim.ui.input = function(_opts, on_confirm)
-      on_confirm("fix this")
+    local saved_input = input.open
+    input.open = function(_prompt, on_input)
+      on_input("fix this")
     end
 
     prime_send_module.prime_send()
@@ -155,7 +156,7 @@ describe("prime-send.reference.for_buffer", function()
     end, 10)
 
     reference.for_buffer = orig_for_buffer
-    vim.ui.input = saved_input
+    input.open = saved_input
     state.set_pinned(nil)
 
     assert.are.equal(1, calls)

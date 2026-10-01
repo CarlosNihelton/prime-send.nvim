@@ -1,5 +1,6 @@
 local tests_dir = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h")
 local state = require("prime-send.state")
+local input = require("prime-send.input")
 local format = require("prime-send.format")
 local prime_send_module = require("prime-send")
 local selector = require("prime-send.selector")
@@ -66,13 +67,13 @@ describe("PrimeSendMultiple flow", function()
 
   it("appends the composed entry without spawning", function()
     open_buffer_at()
-    local saved_input = vim.ui.input
-    vim.ui.input = function(_opts, on_confirm)
-      on_confirm("first comment")
+    local saved_input = input.open
+    input.open = function(_prompt, on_input)
+      on_input("first comment")
     end
 
     prime_send_module.send_multiple({})
-    vim.ui.input = saved_input
+    input.open = saved_input
 
     local entries = state.entries()
     assert.are.equal(1, #entries)
@@ -148,9 +149,9 @@ describe("PrimeSendMultiple flow", function()
   it("lets a plain prime_send deliver its own message and keep pending entries", function()
     state.add_entry("src/x.lua:42 Comment: pending entry")
     open_buffer_at()
-    local saved_input = vim.ui.input
-    vim.ui.input = function(_opts, on_confirm)
-      on_confirm("direct comment")
+    local saved_input = input.open
+    input.open = function(_prompt, on_input)
+      on_input("direct comment")
     end
     local saved_open = selector.open
     selector.open = function(_entries, on_choice)
@@ -162,7 +163,7 @@ describe("PrimeSendMultiple flow", function()
     assert.is_true(wait_for(function()
       return spawn_count() == 1
     end))
-    vim.ui.input = saved_input
+    input.open = saved_input
     selector.open = saved_open
 
     assert.is_true(wait_for(function()

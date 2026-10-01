@@ -1,4 +1,6 @@
 --- Floating selector window for picking an entry from a list.
+local float = require("prime-send.float")
+
 local M = {}
 
 --- Open the selector over ``entries`` and call ``on_choice`` with the
@@ -28,15 +30,7 @@ function M.open(entries, on_choice)
   width = math.min(width + 2, math.floor(vim.o.columns * 0.9))
   local height = math.max(1, math.min(#entries, math.floor(vim.o.lines * 0.6)))
 
-  local win = vim.api.nvim_open_win(bufnr, true, {
-    relative = "editor",
-    width = width,
-    height = height,
-    row = math.floor((vim.o.lines - height) / 2),
-    col = math.floor((vim.o.columns - width) / 2),
-    border = "rounded",
-    style = "minimal",
-  })
+  local win = float.centered(bufnr, width, height)
   vim.wo[win].cursorline = true
 
   local finished = false

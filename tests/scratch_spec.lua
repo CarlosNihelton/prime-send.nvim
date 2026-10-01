@@ -1,4 +1,5 @@
 local format = require("prime-send.format")
+local input = require("prime-send.input")
 local scratch = require("prime-send.scratch")
 
 describe("prime-send.format", function()
@@ -119,13 +120,13 @@ describe("prime_send with cancelled comment", function()
     })
     vim.api.nvim_win_set_cursor(win, { 42, 0 })
 
-    local saved_input = vim.ui.input
-    vim.ui.input = function(_opts, on_confirm)
-      on_confirm(nil)
+    local saved_input = input.open
+    input.open = function(_prompt, on_input)
+      on_input(nil)
     end
     local prime_send_module = require("prime-send")
     prime_send_module.prime_send()
-    vim.ui.input = saved_input
+    input.open = saved_input
 
     for _, w in ipairs(vim.api.nvim_list_wins()) do
       if w ~= win then
@@ -163,14 +164,14 @@ describe("prime_send with empty comment", function()
     })
     vim.api.nvim_win_set_cursor(win, { 42, 0 })
 
-    local saved_input = vim.ui.input
-    vim.ui.input = function(_opts, on_confirm)
-      on_confirm("")
+    local saved_input = input.open
+    input.open = function(_prompt, on_input)
+      on_input("")
     end
 
     local prime_send_module = require("prime-send")
     prime_send_module.prime_send()
-    vim.ui.input = saved_input
+    input.open = saved_input
 
     -- A floating scratch window exists beyond the window we opened.
     local scratch_buf

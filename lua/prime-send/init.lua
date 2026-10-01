@@ -1,4 +1,5 @@
 local agents = require("prime-send.agents")
+local input = require("prime-send.input")
 local state = require("prime-send.state")
 
 local M = {}
@@ -98,12 +99,13 @@ local function deliver_pinned(message, on_delivered)
   deliver(identity, false)
 end
 
---- The shared capture flow: prompt for the comment, opening the scratch
---- buffer on empty input, and hand the composed entry to on_entry.
+--- The shared capture flow: capture the comment in the floating input,
+--- opening the scratch buffer on empty input, and hand the composed entry
+--- to on_entry.
 ---@param ref string the precomputed reference of the current buffer
 ---@param on_entry fun(message: string|nil)
 local function capture(ref, on_entry)
-  vim.ui.input({ prompt = "Comment: " }, function(comment)
+  input.open("Comment: ", function(comment)
     if not comment then
       on_entry(nil)
       return

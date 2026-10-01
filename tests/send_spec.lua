@@ -1,5 +1,6 @@
 local tests_dir = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h")
 local send = require("prime-send.send")
+local input = require("prime-send.input")
 local prime_send_module = require("prime-send")
 local selector = require("prime-send.selector")
 local state = require("prime-send.state")
@@ -68,9 +69,9 @@ describe("prime-send.send", function()
     local marker = io.open(tests_dir .. "/fail-once", "w")
     marker:close()
 
-    local saved_input = vim.ui.input
-    vim.ui.input = function(_opts, on_confirm)
-      on_confirm("fix this")
+    local saved_input = input.open
+    input.open = function(_prompt, on_input)
+      on_input("fix this")
     end
 
     local new_identity
@@ -108,7 +109,7 @@ describe("prime-send.send", function()
       return new_identity ~= nil and state.pinned() == new_identity
     end, 10)
 
-    vim.ui.input = saved_input
+    input.open = saved_input
     selector.open = saved_open
     assert.are.equal(new_identity, state.pinned())
     assert.are.equal(0, vim.fn.filereadable(tests_dir .. "/fail-once"))
@@ -159,9 +160,9 @@ describe("delivery failure reporting", function()
     state.set_pinned("sess-1")
     prime_send_module.setup({ cmd = "definitely-missing-binary-xyz" })
     local restore = capture_echo()
-    local saved_input = vim.ui.input
-    vim.ui.input = function(_opts, on_confirm)
-      on_confirm("fix this")
+    local saved_input = input.open
+    input.open = function(_prompt, on_input)
+      on_input("fix this")
     end
 
     open_buffer_at()
@@ -170,7 +171,7 @@ describe("delivery failure reporting", function()
     vim.wait(3000, function()
       return echoed ~= nil
     end, 10)
-    vim.ui.input = saved_input
+    input.open = saved_input
     restore()
 
     assert.truthy(echoed:find("failed to spawn", 1, true))
@@ -185,9 +186,9 @@ describe("delivery failure reporting", function()
       on_choice(1)
     end
     local restore = capture_echo()
-    local saved_input = vim.ui.input
-    vim.ui.input = function(_opts, on_confirm)
-      on_confirm("fix this")
+    local saved_input = input.open
+    input.open = function(_prompt, on_input)
+      on_input("fix this")
     end
 
     open_buffer_at()
@@ -196,7 +197,7 @@ describe("delivery failure reporting", function()
     vim.wait(5000, function()
       return echoed ~= nil
     end, 10)
-    vim.ui.input = saved_input
+    input.open = saved_input
     selector.open = saved_open
     restore()
 
