@@ -13,6 +13,9 @@ describe("prime-send.input.open", function()
   end)
 
   it("opens a centered floating window with the prompt as the border title", function()
+    -- A realistic terminal width; headless nvim defaults to 80 columns,
+    -- where the 90 percent clamp would bind before the 75-column minimum.
+    vim.o.columns = 120
     local win, bufnr = input.open("Comment: ", function(text)
       result = text
     end)
@@ -21,7 +24,7 @@ describe("prime-send.input.open", function()
     assert.is_true(vim.api.nvim_buf_is_valid(bufnr))
     local config = vim.api.nvim_win_get_config(win)
     assert.are.equal("editor", config.relative)
-    assert.are.equal(65, config.width)
+    assert.are.equal(75, config.width)
     -- The title comes back as highlight chunks: {{ "text", "hl" }}.
     -- (:startinsert only takes effect once the command completes, so the
     -- insert mode itself is proven by the typing tests below.)
