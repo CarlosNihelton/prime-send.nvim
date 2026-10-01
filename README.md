@@ -22,8 +22,8 @@ with `:PrimeSendSelectAgent`.
 
 ## Selector
 
-The selector is a centered floating window showing one line per agent: id, name, lifecycle,
-activity, and a summary. Move with the normal navigation keys and:
+The selector is a centered floating window titled "Select an agent" showing one line per agent:
+id, name, lifecycle, activity, and a summary. Move with the normal navigation keys and:
 
 - `<CR>` picks the agent under the cursor and pins it.
 - `<Esc>` or `q` cancels, leaving the previous pin (if any) cleared.

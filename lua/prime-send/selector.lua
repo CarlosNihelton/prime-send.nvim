@@ -30,7 +30,7 @@ function M.open(entries, on_choice)
   width = math.min(width + 2, math.floor(vim.o.columns * 0.9))
   local height = math.max(1, math.min(#entries, math.floor(vim.o.lines * 0.6)))
 
-  local win = float.centered(bufnr, width, height)
+  local win = float.centered(bufnr, width, height, { title = "Select an agent" })
   vim.wo[win].cursorline = true
 
   local finished = false

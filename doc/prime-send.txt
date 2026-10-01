@@ -118,9 +118,9 @@ BUFFER SUPPORT                                          *prime-send-buffers*
 ==============================================================================
 SELECTOR                                                *prime-send-selector*
 
-The selector is a centered floating window showing one line per agent: id,
-name, lifecycle, activity, and a summary. Move with the normal navigation
-keys, then:
+The selector is a centered floating window titled "Select an agent" showing
+one line per agent: id, name, lifecycle, activity, and a summary. Move with
+the normal navigation keys, then:
 
     <CR>        pick the agent under the cursor and pin it
     <Esc>, q    cancel (the previous pin, if any, is cleared)

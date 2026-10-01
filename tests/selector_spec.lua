@@ -20,6 +20,8 @@ describe("prime-send.selector.open", function()
     assert.is_true(vim.api.nvim_buf_is_valid(bufnr))
     assert.are.equal(3, vim.api.nvim_buf_line_count(bufnr))
     assert.is_true(vim.wo[win].cursorline)
+    -- The title comes back as highlight chunks: {{ "text", "hl" }}.
+    assert.are.equal("Select an agent", vim.api.nvim_win_get_config(win).title[1][1])
 
     vim.api.nvim_win_set_cursor(win, { 2, 0 })
     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", true, false, true), "x", false)
