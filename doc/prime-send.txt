@@ -18,12 +18,14 @@ selector lists the agents right before the first delivery.
 ==============================================================================
 COMMANDS                                              *prime-send-commands*
 
-:PrimeSend                                                   *:PrimeSend*
+:PrimeSend[range]                                            *:PrimeSend*
     Capture a comment in the floating input (see |prime-send-input|) and
     deliver `{reference} Comment: {comment}` to the pinned agent. With no
     agent pinned, the selector opens right before the first delivery. An
     empty comment opens the scratch buffer for extended input instead (see
-    |prime-send-scratch|).
+    |prime-send-scratch|). Accepts a range: the reference is resolved from
+    the selection marks, so `:'<,'>PrimeSend` from visual mode sends
+    `{path}:{start}-{end}` for the selection.
 
 :PrimeSendSelectAgent                                 *:PrimeSendSelectAgent*
     Open the floating selector (see |prime-send-selector|) over the agents
