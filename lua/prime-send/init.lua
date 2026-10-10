@@ -53,6 +53,9 @@ end
 ---@param message string
 ---@param on_delivered nil|fun()
 local function deliver_pinned(message, on_delivered)
+  -- The note rides on the final message at the single delivery choke point,
+  -- so every path (single, scratch, aggregated, and retries) carries it.
+  message = format.finalize(message)
   local function deliver(identity, retried)
     sender.send(identity, message, function(result)
       if result.error then

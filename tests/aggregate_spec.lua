@@ -112,7 +112,10 @@ describe("PrimeSendMultiple flow", function()
     local argv = vim.split(data, "\0", { plain = true })
     assert.are.equal("send", argv[1])
     assert.are.equal("--message", argv[3])
-    assert.are.equal("src/x.lua:42 Comment: first\n\nsrc/y.lua:7 Comment:\nsecond line", argv[4])
+    assert.are.equal(
+      "src/x.lua:42 Comment: first\n\nsrc/y.lua:7 Comment:\nsecond line\n\n" .. format.REPLY_NOTE,
+      argv[4]
+    )
   end)
 
   it("echoes nothing pending and spawns nothing on an empty queue", function()

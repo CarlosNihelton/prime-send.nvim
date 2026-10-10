@@ -67,7 +67,10 @@ setup({opts})                                          *prime-send-setup()*
 MESSAGE FORMAT                                          *prime-send-format*
 
 Every entry carries its own reference and is machine-greppable in its first
-line.
+line. Every delivered message ends with a fixed delivery note after one blank
+line, `[Sent via prime-send neovim plugin. Reply inline in your session, do
+not send messages.]`, telling the receiving agent the sender is a human in an
+editor and the answer belongs in the receiving session.
 
 Single-line comment: one line per location.~
 

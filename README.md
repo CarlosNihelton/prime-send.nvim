@@ -86,6 +86,15 @@ src/y.lua:7 Comment:
 another entry
 ```
 
+Every delivered message ends with a fixed delivery note after one blank line:
+
+```
+[Sent via prime-send neovim plugin. Reply inline in your session, do not send messages.]
+```
+
+The note tells the receiving agent that the sender is a human in an editor (the CLI stamps an
+ephemeral session id as the sender) and that the answer belongs in the receiving session.
+
 ## Buffer support
 
 - **Normal buffers**: the reference is the file path relative to the project root (the git
