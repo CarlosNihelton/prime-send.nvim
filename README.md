@@ -14,7 +14,7 @@ with `:PrimeSendSelectAgent`.
 
 | Command | Description |
 | --- | --- |
-| `:PrimeSend` | Capture a comment in a floating input and deliver `{reference} Comment: {comment}` to the pinned agent. An empty comment opens the scratch buffer for extended input. |
+| `:PrimeSend` | Capture a comment in a floating input and deliver `{reference} Comment: {comment}` to the pinned agent. An empty comment opens the scratch buffer for extended input. Accepts a range, so `:'<,'>PrimeSend` from visual mode sends the selection reference. |
 | `:PrimeSendSelectAgent` | Open the floating selector over the agents known by `prime-agent list --json --all` and pin the chosen one. |
 | `:PrimeSendMultiple` | Capture a comment as `:PrimeSend` does, but append the composed entry to the pending queue instead of delivering. Echoes the pending count. |
 | `:PrimeSendMultiple!` | Deliver every pending entry as a single message, entries separated by one blank line, and clear the queue. Echoes `prime-send: nothing pending` and spawns nothing when the queue is empty. |
